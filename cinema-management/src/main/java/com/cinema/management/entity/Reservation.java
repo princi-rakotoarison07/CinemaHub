@@ -30,8 +30,9 @@ public class Reservation {
   @JoinColumn(name = "id_seance", nullable = false)
   private Seance seance;
 
-  @Column(nullable = false)
-  private String statut;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "id_statut", nullable = false)
+  private Statut statut;
 
   @Column(name = "montant_total", nullable = false)
   private BigDecimal montantTotal;
@@ -66,11 +67,11 @@ public class Reservation {
     this.seance = seance;
   }
 
-  public String getStatut() {
+  public Statut getStatut() {
     return statut;
   }
 
-  public void setStatut(String statut) {
+  public void setStatut(Statut statut) {
     this.statut = statut;
   }
 

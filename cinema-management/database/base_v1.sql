@@ -98,13 +98,21 @@ CREATE TABLE client (
 );
 
 -- ------------------------------
+-- STATUTS
+-- ------------------------------
+CREATE TABLE statut (
+  id SERIAL PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE
+);
+
+-- ------------------------------
 -- RESERVATIONS
 -- ------------------------------
 CREATE TABLE reservation (
   id SERIAL PRIMARY KEY,
   id_client INT NOT NULL REFERENCES client(id),
   id_seance INT NOT NULL REFERENCES seance(id),
-  statut TEXT NOT NULL DEFAULT 'EN_ATTENTE' CHECK (statut IN ('EN_ATTENTE', 'CONFIRMEE', 'PAYEE', 'ANNULEE')),
+  id_statut INT NOT NULL REFERENCES statut(id),
   montant_total NUMERIC(8,2) NOT NULL DEFAULT 0,
   date_reservation TIMESTAMPTZ DEFAULT now(),
   date_expiration TIMESTAMPTZ
@@ -146,6 +154,13 @@ CREATE TABLE tarif (
 -- ------------------------------
 -- DONNÉES DE DÉMONSTRATION
 -- ------------------------------
+
+-- Insertion des statuts
+INSERT INTO statut (code) VALUES
+  ('EN_ATTENTE'),
+  ('CONFIRMEE'),
+  ('PAYEE'),
+  ('ANNULEE');
 
 -- Insertion des types de place
 INSERT INTO type_place (libelle) VALUES
@@ -275,8 +290,8 @@ INSERT INTO client (nom, prenom, email, telephone) VALUES
   ('Princi', 'Zo', 'princi@email.com', '0601020304');
 
 -- Création d'une réservation exemple pour Avatar le 10 janvier à 10h en Salle 1
-INSERT INTO reservation (id_client, id_seance, statut, montant_total, date_expiration) VALUES
-  (1, 1, 'EN_ATTENTE', 19.00, now() + interval '15 minutes');
+INSERT INTO reservation (id_client, id_seance, id_statut, montant_total, date_expiration) VALUES
+  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 19.00, now() + interval '15 minutes');
 
 -- Ajout de tickets (2 places adultes standard)
 INSERT INTO ticket (id_reservation, id_place, id_categorie_client, prix) VALUES
@@ -306,7 +321,8 @@ SELECT
 FROM seance s
 JOIN film f ON s.id_film = f.id
 JOIN salle sal ON s.id_salle = sal.id
-LEFT JOIN reservation r ON r.id_seance = s.id AND r.statut IN ('CONFIRMEE', 'PAYEE')
+LEFT JOIN reservation r ON r.id_seance = s.id
+LEFT JOIN statut st ON r.id_statut = st.id AND st.code IN ('CONFIRMEE', 'PAYEE')
 LEFT JOIN ticket t ON t.id_reservation = r.id
 WHERE f.titre = 'Avatar' 
   AND DATE(s.date_heure) = '2026-01-10'
@@ -326,7 +342,9 @@ LEFT JOIN ticket t ON t.id_place = p.id
   AND t.id_reservation IN (
     SELECT id FROM reservation 
     WHERE id_seance = 1 
-    AND statut IN ('CONFIRMEE', 'PAYEE', 'EN_ATTENTE')
+    AND id_statut IN (
+      SELECT id FROM statut WHERE code IN ('CONFIRMEE', 'PAYEE', 'EN_ATTENTE')
+    )
   )
 LEFT JOIN tarif tar ON tar.id_type_place = p.id_type_place 
   AND tar.id_categorie_client = (SELECT id FROM categorie_client WHERE libelle = 'ADULTE')
@@ -341,18 +359,19 @@ SELECT
   s.date_heure,
   sal.nom as salle,
   s.version,
-  r.statut,
+  st.code as statut,
   r.montant_total,
   COUNT(t.id) as nombre_places,
   STRING_AGG(p.rangee || p.numero, ', ' ORDER BY p.rangee, p.numero) as places
 FROM reservation r
+JOIN statut st ON r.id_statut = st.id
 JOIN seance s ON r.id_seance = s.id
 JOIN film f ON s.id_film = f.id
 JOIN salle sal ON s.id_salle = sal.id
 LEFT JOIN ticket t ON t.id_reservation = r.id
 LEFT JOIN place p ON t.id_place = p.id
 WHERE r.id_client = 1
-GROUP BY r.id, f.titre, s.date_heure, sal.nom, s.version, r.statut, r.montant_total
+GROUP BY r.id, f.titre, s.date_heure, sal.nom, s.version, st.code, r.montant_total
 ORDER BY s.date_heure DESC;
 
 -- 4. Calculer le prix d'une réservation selon type place et catégorie client

@@ -8,9 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-  @EntityGraph(attributePaths = {"client", "seance", "seance.film", "seance.film.genres", "seance.salle"})
+  @EntityGraph(
+      attributePaths = {"client", "seance", "seance.film", "seance.film.genres", "seance.salle", "statut"})
   List<Reservation> findAll();
 
-  @EntityGraph(attributePaths = {"client", "seance", "seance.film", "seance.film.genres", "seance.salle"})
+  @EntityGraph(
+      attributePaths = {"client", "seance", "seance.film", "seance.film.genres", "seance.salle", "statut"})
   Optional<Reservation> findById(Long id);
 }

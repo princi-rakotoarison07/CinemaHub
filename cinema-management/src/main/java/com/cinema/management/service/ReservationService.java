@@ -5,12 +5,14 @@ import com.cinema.management.entity.Client;
 import com.cinema.management.entity.Place;
 import com.cinema.management.entity.Reservation;
 import com.cinema.management.entity.Seance;
+import com.cinema.management.entity.Statut;
 import com.cinema.management.entity.Tarif;
 import com.cinema.management.entity.Ticket;
 import com.cinema.management.repository.CategorieClientRepository;
 import com.cinema.management.repository.ClientRepository;
 import com.cinema.management.repository.PlaceRepository;
 import com.cinema.management.repository.ReservationRepository;
+import com.cinema.management.repository.StatutRepository;
 import com.cinema.management.repository.TarifRepository;
 import com.cinema.management.repository.TicketRepository;
 import com.cinema.management.repository.SeanceRepository;
@@ -35,6 +37,7 @@ public class ReservationService {
   private final PlaceRepository placeRepository;
   private final CategorieClientRepository categorieClientRepository;
   private final TarifRepository tarifRepository;
+  private final StatutRepository statutRepository;
 
   public ReservationService(
       ReservationRepository reservationRepository,
@@ -43,7 +46,8 @@ public class ReservationService {
       SeanceRepository seanceRepository,
       PlaceRepository placeRepository,
       CategorieClientRepository categorieClientRepository,
-      TarifRepository tarifRepository) {
+      TarifRepository tarifRepository,
+      StatutRepository statutRepository) {
     this.reservationRepository = reservationRepository;
     this.ticketRepository = ticketRepository;
     this.clientRepository = clientRepository;
@@ -51,6 +55,13 @@ public class ReservationService {
     this.placeRepository = placeRepository;
     this.categorieClientRepository = categorieClientRepository;
     this.tarifRepository = tarifRepository;
+    this.statutRepository = statutRepository;
+  }
+
+  private Statut getStatutOrThrow(String code) {
+    return statutRepository
+        .findByCode(code)
+        .orElseThrow(() -> new IllegalStateException("Statut introuvable: " + code));
   }
 
   public List<Reservation> findAll() {
@@ -64,10 +75,12 @@ public class ReservationService {
   @Transactional
   public Reservation pay(Long reservationId) {
     Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
-    if ("ANNULEE".equals(reservation.getStatut())) {
+    String currentCode =
+        reservation.getStatut() != null ? reservation.getStatut().getCode() : null;
+    if ("ANNULEE".equals(currentCode)) {
       throw new IllegalStateException("Réservation annulée");
     }
-    reservation.setStatut("PAYEE");
+    reservation.setStatut(getStatutOrThrow("PAYEE"));
     reservation.setDateExpiration(null);
     return reservationRepository.save(reservation);
   }
@@ -84,7 +97,7 @@ public class ReservationService {
     Reservation reservation = new Reservation();
     reservation.setClient(client);
     reservation.setSeance(seance);
-    reservation.setStatut("EN_ATTENTE");
+    reservation.setStatut(getStatutOrThrow("EN_ATTENTE"));
     reservation.setMontantTotal(BigDecimal.ZERO);
     reservation.setDateExpiration(Instant.now().plus(15, ChronoUnit.MINUTES));
 
@@ -99,7 +112,7 @@ public class ReservationService {
           categorieClientRepository.findById(item.categorieClientId()).orElseThrow();
 
       boolean occupee =
-          ticketRepository.existsByPlaceIdAndReservationSeanceIdAndReservationStatutIn(
+          ticketRepository.existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
               place.getId(), seance.getId(), STATUTS_OCCUPES);
       if (occupee) {
         throw new IllegalStateException("Place déjà réservée pour cette séance");

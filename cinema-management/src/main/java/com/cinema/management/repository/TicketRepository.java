@@ -17,14 +17,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
   @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "categorieClient"})
   Optional<Ticket> findById(Long id);
 
-  boolean existsByPlaceIdAndReservationSeanceIdAndReservationStatutIn(
+  boolean existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
       Long placeId, Long seanceId, Collection<String> statuts);
 
   @Query(
       "select distinct t.place.id "
           + "from Ticket t "
           + "join t.reservation r "
-          + "where r.seance.id = :seanceId and r.statut in :statuts")
+          + "where r.seance.id = :seanceId and r.statut.code in :statuts")
   List<Long> findOccupiedPlaceIdsBySeanceId(
       @Param("seanceId") Long seanceId, @Param("statuts") Collection<String> statuts);
 }

@@ -37,9 +37,10 @@ public class ReservationController {
   }
 
   @PostMapping
-  public Reservation create(@RequestBody ReservationCreateRequest request) {
-    return reservationService.createReservation(
-        request.clientId(), request.seanceId(), request.items());
+  public ReservationDto create(@RequestBody ReservationCreateRequest request) {
+    return toDto(
+        reservationService.createReservation(
+            request.clientId(), request.seanceId(), request.items()));
   }
 
   @PutMapping("/{id}/pay")
@@ -55,11 +56,12 @@ public class ReservationController {
   private static ReservationDto toDto(Reservation r) {
     Long clientId = r.getClient() != null ? r.getClient().getId() : null;
     Long seanceId = r.getSeance() != null ? r.getSeance().getId() : null;
+    String statutCode = r.getStatut() != null ? r.getStatut().getCode() : null;
     return new ReservationDto(
         r.getId(),
         clientId != null ? new ClientRef(clientId) : null,
         seanceId != null ? new SeanceRef(seanceId) : null,
-        r.getStatut(),
+        statutCode,
         r.getMontantTotal(),
         r.getDateReservation(),
         r.getDateExpiration());
