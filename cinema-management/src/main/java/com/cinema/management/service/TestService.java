@@ -2,39 +2,48 @@ package com.cinema.management.service;
 
 import com.cinema.management.entity.Test;
 import com.cinema.management.repository.TestRepository;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
 
 @Service
 public class TestService {
 
-  private final TestRepository testRepository;
+    private final TestRepository testRepository;
 
-  public TestService(TestRepository testRepository) {
-    this.testRepository = testRepository;
-  }
+    public TestService(TestRepository testRepository) {
+        this.testRepository = testRepository;
+    }
 
-  public List<Test> findAll() {
-    return testRepository.findAll();
-  }
+    // Récupère toutes les entrées
+    public List<Test> findAll() {
+        return testRepository.findAll();
+    }
 
-  public Test create(Test test) {
-    return testRepository.save(test);
-  }
+    // Récupère par id
+    public Optional<Test> findById(Long id) {
+        return testRepository.findById(id);
+    }
 
-  public Optional<Test> findById(Long id) {
-    return testRepository.findById(id);
-  }
+    // Crée une nouvelle entrée
+    public Test create(Test test) {
+        return testRepository.save(test);
+    }
 
-  public Test update(Long id, Test test) {
-    Test existing = testRepository.findById(id).orElseThrow();
-    existing.setIp(test.getIp());
-    existing.setPort(test.getPort());
-    return testRepository.save(existing);
-  }
+    // Met à jour une entrée
+    public Test update(Long id, Test updatedTest) {
+        return testRepository.findById(id)
+            .map(test -> {
+                test.setIp(updatedTest.getIp());
+                test.setPort(updatedTest.getPort());
+                return testRepository.save(test);
+            })
+            .orElseThrow(() -> new RuntimeException("Test not found with id " + id));
+    }
 
-  public void delete(Long id) {
-    testRepository.deleteById(id);
-  }
+    // Supprime une entrée
+    public void delete(Long id) {
+        testRepository.deleteById(id);
+    }
 }
