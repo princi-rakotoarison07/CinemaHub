@@ -62,6 +62,17 @@ public class ReservationService {
   }
 
   @Transactional
+  public Reservation pay(Long reservationId) {
+    Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
+    if ("ANNULEE".equals(reservation.getStatut())) {
+      throw new IllegalStateException("Réservation annulée");
+    }
+    reservation.setStatut("PAYEE");
+    reservation.setDateExpiration(null);
+    return reservationRepository.save(reservation);
+  }
+
+  @Transactional
   public Reservation createReservation(Long clientId, Long seanceId, List<Item> items) {
     if (items == null || items.isEmpty()) {
       throw new IllegalArgumentException("Aucune place sélectionnée");

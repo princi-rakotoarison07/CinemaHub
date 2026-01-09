@@ -9,3 +9,5 @@ Un film peut être diffusé sur plusieurs jours
 
 Fonctionnalité : Un client veut acheter des places 
 pour regarder Avatar pour le 10 janvier à 10 h , salle
+
+

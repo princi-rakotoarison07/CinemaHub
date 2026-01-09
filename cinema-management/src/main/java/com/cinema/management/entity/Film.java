@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "film")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Film {
 
   @Id
