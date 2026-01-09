@@ -1,0 +1,43 @@
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === IDEs ===
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# === Logs ===
+*.log
+logs/
+
+# === Java / Maven / Spring Boot ===
+# Maven build output
+**/target/
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot temp
+**/bin/
+**/out/
+
+# === Node / Vite ===
+**/node_modules/
+**/dist/
+**/.vite/
+
+# === Env files (keep your local secrets out of git) ===
+.env
+.env.*
+
+# === Spring Boot local config ===
+cinema-management/src/main/resources/application.properties
+
+# === Optional: lockfiles (keep if you want reproducible installs)
+# Uncomment if you don't want lockfiles in git
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
