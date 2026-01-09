@@ -4,6 +4,19 @@ import MainLayoutDashboard from '../layouts/MainLayoutDashboard.vue'
 import DashboardHome from '../views/DashboardHome.vue'
 import TestList from '../views/tests/TestList.vue'
 import TestForm from '../views/tests/TestForm.vue'
+import SalleList from '../views/salles/SalleList.vue'
+import SalleForm from '../views/salles/SalleForm.vue'
+import FilmList from '../views/films/FilmList.vue'
+import FilmForm from '../views/films/FilmForm.vue'
+import SeanceList from '../views/seances/SeanceList.vue'
+import SeanceForm from '../views/seances/SeanceForm.vue'
+import TarifList from '../views/tarifs/TarifList.vue'
+import PlaceList from '../views/places/PlaceList.vue'
+import TicketList from '../views/tickets/TicketList.vue'
+import ClientList from '../views/clients/ClientList.vue'
+import ClientForm from '../views/clients/ClientForm.vue'
+import ReservationList from '../views/reservations/ReservationList.vue'
+import ReservationForm from '../views/reservations/ReservationForm.vue'
 
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
@@ -32,6 +45,77 @@ const router = createRouter({
           name: 'tests-edit',
           component: TestForm,
           props: true,
+        },
+        {
+          path: 'salles',
+          name: 'salles-list',
+          component: SalleList,
+        },
+        {
+          path: 'salles/new',
+          name: 'salles-new',
+          component: SalleForm,
+        },
+        {
+          path: 'salles/:id/edit',
+          name: 'salles-edit',
+          component: SalleForm,
+          props: true,
+        },
+        {
+          path: 'films',
+          name: 'films-list',
+          component: FilmList,
+        },
+        {
+          path: 'films/new',
+          name: 'films-new',
+          component: FilmForm,
+        },
+        {
+          path: 'seances',
+          name: 'seances-list',
+          component: SeanceList,
+        },
+        {
+          path: 'seances/new',
+          name: 'seances-new',
+          component: SeanceForm,
+        },
+        {
+          path: 'tarifs',
+          name: 'tarifs-list',
+          component: TarifList,
+        },
+        {
+          path: 'places',
+          name: 'places-list',
+          component: PlaceList,
+        },
+        {
+          path: 'tickets',
+          name: 'tickets-list',
+          component: TicketList,
+        },
+        {
+          path: 'clients',
+          name: 'clients-list',
+          component: ClientList,
+        },
+        {
+          path: 'clients/new',
+          name: 'clients-new',
+          component: ClientForm,
+        },
+        {
+          path: 'reservations',
+          name: 'reservations-list',
+          component: ReservationList,
+        },
+        {
+          path: 'reservations/new',
+          name: 'reservations-new',
+          component: ReservationForm,
         },
       ],
     },
