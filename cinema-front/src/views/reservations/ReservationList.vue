@@ -16,6 +16,7 @@ const clients = ref([])
 const seances = ref([])
 const films = ref([])
 const salles = ref([])
+const expandedCaBuckets = ref({})
 const loading = ref(false)
 const error = ref('')
 
@@ -76,7 +77,7 @@ const hourBucketLabel = (dateStr) => {
   }
 }
 
-const chiffreAffaireParHeureParFilm = computed(() => {
+const chiffreAffaireParHeureParSeance = computed(() => {
   const map = new Map()
 
   for (const r of reservations.value) {
@@ -85,25 +86,54 @@ const chiffreAffaireParHeureParFilm = computed(() => {
     const seanceId = r?.seance?.id
     const dateHeure = getSeanceDateHeure(seanceId)
     const bucket = hourBucketLabel(dateHeure)
-    const film = getFilmTitreBySeanceId(seanceId)
+    const filmSalle = getFilmSalleLabelBySeanceId(seanceId)
     const amount = Number.parseFloat(String(r?.montantTotal ?? 0)) || 0
 
-    const key = `${bucket}||${film}`
-    const prev = map.get(key)
-    map.set(key, {
-      dateHeure: bucket,
-      film,
-      total: (prev?.total ?? 0) + amount,
+    const key = `${bucket}||${filmSalle}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        dateHeure: bucket,
+        filmSalle,
+        total: 0,
+        details: [],
+      })
+    }
+
+    const entry = map.get(key)
+    entry.total += amount
+    entry.details.push({
+      id: r?.id,
+      client: getClientLabel(r?.client?.id),
+      montant: amount,
+      expiration: r?.dateExpiration,
     })
   }
 
-  return Array.from(map.values()).sort((a, b) => {
+  const list = Array.from(map.values())
+  list.sort((a, b) => {
     const da = a.dateHeure || ''
     const db = b.dateHeure || ''
     if (da !== db) return da.localeCompare(db)
-    return a.film.localeCompare(b.film)
+    return String(a.filmSalle || '').localeCompare(String(b.filmSalle || ''))
   })
+
+  for (const x of list) {
+    x.details.sort((a, b) => String(a.client || '').localeCompare(String(b.client || '')))
+  }
+
+  return list
 })
+
+const toggleCaBucket = (bucketKey) => {
+  const key = String(bucketKey ?? '')
+  expandedCaBuckets.value = {
+    ...expandedCaBuckets.value,
+    [key]: !expandedCaBuckets.value[key],
+  }
+}
+
+const isCaBucketExpanded = (bucketKey) => Boolean(expandedCaBuckets.value[String(bucketKey ?? '')])
 
 const load = async () => {
   loading.value = true
@@ -126,6 +156,7 @@ const load = async () => {
     seances.value = await sRes.json()
     films.value = await fRes.json()
     salles.value = await saRes.json()
+    expandedCaBuckets.value = {}
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)
@@ -206,23 +237,59 @@ onMounted(load)
               </table>
             </div>
 
-            <div v-if="chiffreAffaireParHeureParFilm.length" class="mt-4">
+            <div v-if="chiffreAffaireParHeureParSeance.length" class="mt-4">
               <h6>Chiffre d'affaire (par heure, par film) - PAYEE</h6>
               <div class="table-responsive">
                 <table class="table table-sm">
                   <thead>
                     <tr>
+                      <th style="width: 1%"></th>
                       <th>Date heure</th>
-                      <th>Film</th>
+                      <th>Film - Salle</th>
                       <th>Chiffre d'affaire</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="row in chiffreAffaireParHeureParFilm" :key="row.dateHeure + '|' + row.film">
-                      <td>{{ row.dateHeure }}</td>
-                      <td>{{ row.film }}</td>
-                      <td>{{ row.total.toFixed(2) }}</td>
-                    </tr>
+                    <template v-for="row in chiffreAffaireParHeureParSeance" :key="row.key">
+                      <tr>
+                        <td>
+                          <button
+                            class="btn btn-sm btn-outline-primary"
+                            type="button"
+                            @click="toggleCaBucket(row.key)"
+                          >
+                            {{ isCaBucketExpanded(row.key) ? '-' : '+' }}
+                          </button>
+                        </td>
+                        <td>{{ row.dateHeure }}</td>
+                        <td>{{ row.filmSalle }}</td>
+                        <td>{{ row.total.toFixed(2) }}</td>
+                      </tr>
+                      <tr v-if="isCaBucketExpanded(row.key)">
+                        <td colspan="4">
+                          <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                              <thead>
+                                <tr>
+                                  <th>ID</th>
+                                  <th>Client</th>
+                                  <th>Montant</th>
+                                  <th>Expiration</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="d in row.details" :key="row.key + '|' + d.id">
+                                  <td>{{ d.id }}</td>
+                                  <td>{{ d.client }}</td>
+                                  <td>{{ d.montant.toFixed(2) }}</td>
+                                  <td>{{ formatDate(d.expiration) }}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
                   </tbody>
                 </table>
               </div>
