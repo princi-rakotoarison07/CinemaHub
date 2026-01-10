@@ -15,8 +15,10 @@ import TarifForm from '../views/tarifs/TarifForm.vue'
 import TarifGrid from '../views/tarifs/TarifGrid.vue'
 import PlaceList from '../views/places/PlaceList.vue'
 import PlaceForm from '../views/places/PlaceForm.vue'
+import PlaceGestion from '../views/places/PlaceGestion.vue'
 import TicketList from '../views/tickets/TicketList.vue'
 import TicketForm from '../views/tickets/TicketForm.vue'
+import TicketGrid from '../views/tickets/TicketGrid.vue'
 import ClientList from '../views/clients/ClientList.vue'
 import ClientForm from '../views/clients/ClientForm.vue'
 import ReservationList from '../views/reservations/ReservationList.vue'
@@ -107,6 +109,11 @@ const router = createRouter({
           component: PlaceList,
         },
         {
+          path: 'places/gestion',
+          name: 'places-gestion',
+          component: PlaceGestion,
+        },
+        {
           path: 'places/new',
           name: 'places-new',
           component: PlaceForm,
@@ -115,6 +122,11 @@ const router = createRouter({
           path: 'tickets',
           name: 'tickets-list',
           component: TicketList,
+        },
+        {
+          path: 'tickets/grille',
+          name: 'tickets-grille',
+          component: TicketGrid,
         },
         {
           path: 'tickets/new',

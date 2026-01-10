@@ -115,6 +115,14 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
             </RouterLink>
           </li>
           <li>
+            <RouterLink
+              :class="[route.path === '/places/gestion' ? 'active' : '']"
+              to="/places/gestion"
+            >
+              <i class="bi bi-circle"></i><span>Gestion</span>
+            </RouterLink>
+          </li>
+          <li>
             <RouterLink :class="[route.path === '/places/new' ? 'active' : '']" to="/places/new">
               <i class="bi bi-circle"></i><span>Nouveau</span>
             </RouterLink>
@@ -140,6 +148,14 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
           <li>
             <RouterLink :class="[route.path === '/tickets' ? 'active' : '']" to="/tickets">
               <i class="bi bi-circle"></i><span>Liste</span>
+            </RouterLink>
+          </li>
+          <li>
+            <RouterLink
+              :class="[route.path === '/tickets/grille' ? 'active' : '']"
+              to="/tickets/grille"
+            >
+              <i class="bi bi-circle"></i><span>Grille</span>
             </RouterLink>
           </li>
           <li>

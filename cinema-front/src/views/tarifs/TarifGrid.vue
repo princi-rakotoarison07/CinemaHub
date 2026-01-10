@@ -18,8 +18,38 @@ const error = ref('')
 const tarifsOriginal = ref([])
 const rows = ref([])
 
+const newRowCounter = ref(0)
+
 const typePlaces = ref([])
 const categories = ref([])
+
+const typePlaceById = computed(() => {
+  const m = new Map()
+  for (const tp of typePlaces.value ?? []) {
+    if (tp?.id != null) m.set(String(tp.id), tp)
+  }
+  return m
+})
+
+const categorieById = computed(() => {
+  const m = new Map()
+  for (const c of categories.value ?? []) {
+    if (c?.id != null) m.set(String(c.id), c)
+  }
+  return m
+})
+
+const getTypePlaceLabel = (typePlaceId) => {
+  if (!typePlaceId) return ''
+  const tp = typePlaceById.value.get(String(typePlaceId))
+  return tp?.libelle ?? String(typePlaceId)
+}
+
+const getCategorieLabel = (categorieClientId) => {
+  if (!categorieClientId) return ''
+  const c = categorieById.value.get(String(categorieClientId))
+  return c?.libelle ?? String(categorieClientId)
+}
 
 const loadRefs = async () => {
   const [tpRes, catRes] = await Promise.all([fetch(API_TYPE_PLACES), fetch(API_CATEGORIES)])
@@ -37,7 +67,22 @@ const toRow = (t) => ({
   actif: t?.actif != null ? Boolean(t.actif) : true,
   dateDebut: t?.dateDebut ?? '',
   dateFin: t?.dateFin ?? '',
+  isNew: false,
 })
+
+const createNewRow = () => {
+  newRowCounter.value += 1
+  return {
+    id: `new-${newRowCounter.value}`,
+    typePlaceId: '',
+    categorieClientId: '',
+    prix: '',
+    actif: true,
+    dateDebut: '',
+    dateFin: '',
+    isNew: true,
+  }
+}
 
 const load = async () => {
   loading.value = true
@@ -50,6 +95,7 @@ const load = async () => {
 
     tarifsOriginal.value = Array.isArray(list) ? list : []
     rows.value = tarifsOriginal.value.map(toRow)
+    newRowCounter.value = 0
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)
@@ -68,11 +114,10 @@ const originalRowById = computed(() => {
 
 const isDirty = (row) => {
   if (!row?.id) return false
+  if (row.isNew) return true
   const orig = originalRowById.value.get(String(row.id))
   if (!orig) return false
   return (
-    String(row.typePlaceId ?? '') !== String(orig.typePlaceId ?? '') ||
-    String(row.categorieClientId ?? '') !== String(orig.categorieClientId ?? '') ||
     String(row.prix ?? '') !== String(orig.prix ?? '') ||
     Boolean(row.actif) !== Boolean(orig.actif) ||
     String(row.dateDebut ?? '') !== String(orig.dateDebut ?? '') ||
@@ -84,6 +129,14 @@ const dirtyRows = computed(() => rows.value.filter(isDirty))
 
 const cancel = () => {
   rows.value = tarifsOriginal.value.map(toRow)
+}
+
+const addRow = () => {
+  rows.value = [...rows.value, createNewRow()]
+}
+
+const removeRow = (rowId) => {
+  rows.value = rows.value.filter((r) => String(r.id) !== String(rowId))
 }
 
 const save = async () => {
@@ -102,7 +155,6 @@ const save = async () => {
       }
 
       const payload = {
-        id: Number(r.id),
         typePlace: { id: Number(r.typePlaceId) },
         categorieClient: { id: Number(r.categorieClientId) },
         prix: r.prix,
@@ -111,13 +163,17 @@ const save = async () => {
         dateFin: r.dateFin || null,
       }
 
-      const res = await fetch(`${API_TARIFS}/${r.id}`, {
-        method: 'PUT',
+      const isNew = Boolean(r.isNew)
+      const url = isNew ? API_TARIFS : `${API_TARIFS}/${r.id}`
+      const method = isNew ? 'POST' : 'PUT'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(isNew ? payload : { id: Number(r.id), ...payload }),
       })
 
-      if (!res.ok) throw new Error(`Tarif ${r.id} HTTP ${res.status}`)
+      if (!res.ok) throw new Error(`${isNew ? 'Création' : 'Tarif'} ${r.id} HTTP ${res.status}`)
     }
 
     toast.success('Grille mise à jour')
@@ -166,6 +222,7 @@ onMounted(load)
                     <th>Date début</th>
                     <th>Date fin</th>
                     <th>Modifié</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -173,21 +230,31 @@ onMounted(load)
                     <td>{{ r.id }}</td>
 
                     <td style="min-width: 200px">
-                      <select v-model="r.typePlaceId" class="form-select form-select-sm">
-                        <option value="" disabled>Sélectionner...</option>
-                        <option v-for="tp in typePlaces" :key="tp.id" :value="String(tp.id)">
-                          {{ tp.libelle }}
-                        </option>
-                      </select>
+                      <template v-if="r.isNew">
+                        <select v-model="r.typePlaceId" class="form-select form-select-sm">
+                          <option value="" disabled>Sélectionner...</option>
+                          <option v-for="tp in typePlaces" :key="tp.id" :value="String(tp.id)">
+                            {{ tp.libelle }}
+                          </option>
+                        </select>
+                      </template>
+                      <template v-else>
+                        {{ getTypePlaceLabel(r.typePlaceId) }}
+                      </template>
                     </td>
 
                     <td style="min-width: 220px">
-                      <select v-model="r.categorieClientId" class="form-select form-select-sm">
-                        <option value="" disabled>Sélectionner...</option>
-                        <option v-for="c in categories" :key="c.id" :value="String(c.id)">
-                          {{ c.libelle }}
-                        </option>
-                      </select>
+                      <template v-if="r.isNew">
+                        <select v-model="r.categorieClientId" class="form-select form-select-sm">
+                          <option value="" disabled>Sélectionner...</option>
+                          <option v-for="c in categories" :key="c.id" :value="String(c.id)">
+                            {{ c.libelle }}
+                          </option>
+                        </select>
+                      </template>
+                      <template v-else>
+                        {{ getCategorieLabel(r.categorieClientId) }}
+                      </template>
                     </td>
 
                     <td style="min-width: 140px">
@@ -213,16 +280,31 @@ onMounted(load)
                       <span v-if="isDirty(r)" class="badge bg-warning text-dark">Oui</span>
                       <span v-else class="text-muted">Non</span>
                     </td>
+
+                    <td class="text-end">
+                      <button
+                        v-if="r.isNew"
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        :disabled="loading || saving"
+                        @click="removeRow(r.id)"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
 
                   <tr v-if="rows.length === 0">
-                    <td colspan="8" class="text-center text-muted">Aucun élément</td>
+                    <td colspan="9" class="text-center text-muted">Aucun élément</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-outline-primary" type="button" :disabled="loading || saving" @click="addRow">
+                Ajouter ligne
+              </button>
               <button class="btn btn-primary" type="button" :disabled="loading || saving" @click="save">
                 Enregistrer
               </button>
