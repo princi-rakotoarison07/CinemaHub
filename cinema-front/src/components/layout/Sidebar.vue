@@ -79,6 +79,14 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
             </RouterLink>
           </li>
           <li>
+            <RouterLink
+              :class="[route.path === '/tarifs/grille' ? 'active' : '']"
+              to="/tarifs/grille"
+            >
+              <i class="bi bi-circle"></i><span>Grille</span>
+            </RouterLink>
+          </li>
+          <li>
             <RouterLink :class="[route.path === '/tarifs/new' ? 'active' : '']" to="/tarifs/new">
               <i class="bi bi-circle"></i><span>Nouveau</span>
             </RouterLink>

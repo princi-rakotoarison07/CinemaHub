@@ -12,6 +12,7 @@ import SeanceList from '../views/seances/SeanceList.vue'
 import SeanceForm from '../views/seances/SeanceForm.vue'
 import TarifList from '../views/tarifs/TarifList.vue'
 import TarifForm from '../views/tarifs/TarifForm.vue'
+import TarifGrid from '../views/tarifs/TarifGrid.vue'
 import PlaceList from '../views/places/PlaceList.vue'
 import PlaceForm from '../views/places/PlaceForm.vue'
 import TicketList from '../views/tickets/TicketList.vue'
@@ -94,6 +95,11 @@ const router = createRouter({
           path: 'tarifs/new',
           name: 'tarifs-new',
           component: TarifForm,
+        },
+        {
+          path: 'tarifs/grille',
+          name: 'tarifs-grille',
+          component: TarifGrid,
         },
         {
           path: 'places',
