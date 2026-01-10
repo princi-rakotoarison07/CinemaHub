@@ -7,12 +7,9 @@ const route = useRoute()
 const isTestsRoute = computed(() => route.path.startsWith('/tests'))
 const isSallesRoute = computed(() => route.path.startsWith('/salles'))
 const isFilmsRoute = computed(() => route.path.startsWith('/films'))
-const isCinemaRoute = computed(
-  () =>
-    route.path.startsWith('/tarifs') ||
-    route.path.startsWith('/places') ||
-    route.path.startsWith('/tickets'),
-)
+const isTarifsRoute = computed(() => route.path.startsWith('/tarifs'))
+const isPlacesRoute = computed(() => route.path.startsWith('/places'))
+const isTicketsRoute = computed(() => route.path.startsWith('/tickets'))
 
 const isSeancesRoute = computed(() => route.path.startsWith('/seances'))
 const isClientsRoute = computed(() => route.path.startsWith('/clients'))
@@ -63,32 +60,83 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
 
       <li class="nav-item">
         <a
-          :class="['nav-link', isCinemaRoute ? '' : 'collapsed']"
-          data-bs-target="#cinema-nav"
+          :class="['nav-link', isTarifsRoute ? '' : 'collapsed']"
+          data-bs-target="#tarifs-nav"
           data-bs-toggle="collapse"
           href="#"
         >
-          <i class="bi bi-film"></i><span>Cinéma</span
+          <i class="bi bi-cash-stack"></i><span>Tarifs</span
           ><i class="bi bi-chevron-down ms-auto"></i>
         </a>
         <ul
-          id="cinema-nav"
-          :class="['nav-content', 'collapse', isCinemaRoute ? 'show' : '']"
+          id="tarifs-nav"
+          :class="['nav-content', 'collapse', isTarifsRoute ? 'show' : '']"
           data-bs-parent="#sidebar-nav"
         >
           <li>
             <RouterLink :class="[route.path === '/tarifs' ? 'active' : '']" to="/tarifs">
-              <i class="bi bi-circle"></i><span>Tarifs</span>
+              <i class="bi bi-circle"></i><span>Liste</span>
             </RouterLink>
           </li>
+          <li>
+            <RouterLink :class="[route.path === '/tarifs/new' ? 'active' : '']" to="/tarifs/new">
+              <i class="bi bi-circle"></i><span>Nouveau</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a
+          :class="['nav-link', isPlacesRoute ? '' : 'collapsed']"
+          data-bs-target="#places-nav"
+          data-bs-toggle="collapse"
+          href="#"
+        >
+          <i class="bi bi-grid-3x3-gap"></i><span>Places</span
+          ><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul
+          id="places-nav"
+          :class="['nav-content', 'collapse', isPlacesRoute ? 'show' : '']"
+          data-bs-parent="#sidebar-nav"
+        >
           <li>
             <RouterLink :class="[route.path === '/places' ? 'active' : '']" to="/places">
-              <i class="bi bi-circle"></i><span>Places</span>
+              <i class="bi bi-circle"></i><span>Liste</span>
             </RouterLink>
           </li>
           <li>
+            <RouterLink :class="[route.path === '/places/new' ? 'active' : '']" to="/places/new">
+              <i class="bi bi-circle"></i><span>Nouveau</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a
+          :class="['nav-link', isTicketsRoute ? '' : 'collapsed']"
+          data-bs-target="#tickets-nav"
+          data-bs-toggle="collapse"
+          href="#"
+        >
+          <i class="bi bi-ticket-perforated"></i><span>Tickets</span
+          ><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul
+          id="tickets-nav"
+          :class="['nav-content', 'collapse', isTicketsRoute ? 'show' : '']"
+          data-bs-parent="#sidebar-nav"
+        >
+          <li>
             <RouterLink :class="[route.path === '/tickets' ? 'active' : '']" to="/tickets">
-              <i class="bi bi-circle"></i><span>Tickets</span>
+              <i class="bi bi-circle"></i><span>Liste</span>
+            </RouterLink>
+          </li>
+          <li>
+            <RouterLink :class="[route.path === '/tickets/new' ? 'active' : '']" to="/tickets/new">
+              <i class="bi bi-circle"></i><span>Nouveau</span>
             </RouterLink>
           </li>
         </ul>

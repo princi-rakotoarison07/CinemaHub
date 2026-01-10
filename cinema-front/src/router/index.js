@@ -11,8 +11,11 @@ import FilmForm from '../views/films/FilmForm.vue'
 import SeanceList from '../views/seances/SeanceList.vue'
 import SeanceForm from '../views/seances/SeanceForm.vue'
 import TarifList from '../views/tarifs/TarifList.vue'
+import TarifForm from '../views/tarifs/TarifForm.vue'
 import PlaceList from '../views/places/PlaceList.vue'
+import PlaceForm from '../views/places/PlaceForm.vue'
 import TicketList from '../views/tickets/TicketList.vue'
+import TicketForm from '../views/tickets/TicketForm.vue'
 import ClientList from '../views/clients/ClientList.vue'
 import ClientForm from '../views/clients/ClientForm.vue'
 import ReservationList from '../views/reservations/ReservationList.vue'
@@ -88,14 +91,29 @@ const router = createRouter({
           component: TarifList,
         },
         {
+          path: 'tarifs/new',
+          name: 'tarifs-new',
+          component: TarifForm,
+        },
+        {
           path: 'places',
           name: 'places-list',
           component: PlaceList,
         },
         {
+          path: 'places/new',
+          name: 'places-new',
+          component: PlaceForm,
+        },
+        {
           path: 'tickets',
           name: 'tickets-list',
           component: TicketList,
+        },
+        {
+          path: 'tickets/new',
+          name: 'tickets-new',
+          component: TicketForm,
         },
         {
           path: 'clients',
