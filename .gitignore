@@ -33,8 +33,6 @@ logs/
 .env
 .env.*
 
-# === Spring Boot local config ===
-cinema-management/src/main/resources/application.properties
 
 # === Optional: lockfiles (keep if you want reproducible installs)
 # Uncomment if you don't want lockfiles in git
