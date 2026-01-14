@@ -91,6 +91,8 @@ public class ReservationService {
       throw new IllegalArgumentException("Aucune place sélectionnée");
     }
 
+    int nbPlace = items.size();
+
     Client client = clientRepository.findById(clientId).orElseThrow();
     Seance seance = seanceRepository.findById(seanceId).orElseThrow();
 
@@ -98,6 +100,7 @@ public class ReservationService {
     reservation.setClient(client);
     reservation.setSeance(seance);
     reservation.setStatut(getStatutOrThrow("EN_ATTENTE"));
+    reservation.setNbPlace(nbPlace);
     reservation.setMontantTotal(BigDecimal.ZERO);
     reservation.setDateExpiration(Instant.now().plus(15, ChronoUnit.MINUTES));
 

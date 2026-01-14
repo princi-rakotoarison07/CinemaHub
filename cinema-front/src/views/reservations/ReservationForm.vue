@@ -25,11 +25,79 @@ const salles = ref([])
 const places = ref([])
 const selectedPlaceIds = ref([])
 
+const mode = ref('single')
+
 const form = ref({
   clientId: '',
   seanceId: '',
   categorieClientId: '',
+  quantite: 1,
 })
+
+const categorieRows = ref([])
+const newRowCounter = ref(0)
+
+const createNewCategorieRow = () => {
+  newRowCounter.value += 1
+  return {
+    id: `new-${newRowCounter.value}`,
+    categorieClientId: '',
+    quantite: 1,
+  }
+}
+
+const addCategorieRow = () => {
+  categorieRows.value = [...categorieRows.value, createNewCategorieRow()]
+}
+
+const removeCategorieRow = (rowId) => {
+  categorieRows.value = categorieRows.value.filter((r) => String(r.id) !== String(rowId))
+}
+
+const nbPlaceRequired = computed(() => {
+  if (mode.value === 'single') return Number(form.value.quantite ?? 0)
+  return (categorieRows.value ?? []).reduce((sum, r) => sum + Number(r?.quantite ?? 0), 0)
+})
+
+const canSelectMorePlaces = computed(() => selectedPlaceIds.value.length < nbPlaceRequired.value)
+
+const categorieCountById = computed(() => {
+  if (mode.value === 'single') {
+    const m = new Map()
+    const id = String(form.value.categorieClientId ?? '')
+    const q = Number(form.value.quantite ?? 0)
+    if (id && q > 0) m.set(id, q)
+    return m
+  }
+  const m = new Map()
+  for (const r of categorieRows.value ?? []) {
+    const id = String(r?.categorieClientId ?? '')
+    if (!id) continue
+    const q = Number(r?.quantite ?? 0)
+    m.set(id, (m.get(id) ?? 0) + q)
+  }
+  return m
+})
+
+const buildItemsFromSelection = () => {
+  const placeIds = selectedPlaceIds.value.map((x) => Number(x))
+  const cats = Array.from(categorieCountById.value.entries())
+    .map(([categorieClientId, quantite]) => ({ categorieClientId: Number(categorieClientId), quantite: Number(quantite) }))
+    .filter((x) => x.categorieClientId && x.quantite > 0)
+    .sort((a, b) => a.categorieClientId - b.categorieClientId)
+
+  const items = []
+  let idx = 0
+  for (const c of cats) {
+    for (let i = 0; i < c.quantite; i++) {
+      const placeId = placeIds[idx]
+      if (!placeId) break
+      items.push({ placeId, categorieClientId: c.categorieClientId })
+      idx += 1
+    }
+  }
+  return items
+}
 
 const selectedSeance = computed(() =>
   seances.value.find((s) => String(s.id) === String(form.value.seanceId)),
@@ -105,6 +173,7 @@ const togglePlace = (p) => {
   if (isSelected(id)) {
     selectedPlaceIds.value = selectedPlaceIds.value.filter((x) => x !== id)
   } else {
+    if (!canSelectMorePlaces.value) return
     selectedPlaceIds.value = [...selectedPlaceIds.value, id]
   }
 }
@@ -113,20 +182,26 @@ const submit = async () => {
   loading.value = true
   error.value = ''
   try {
-    if (!form.value.categorieClientId) {
-      throw new Error('Catégorie client obligatoire')
+    if (mode.value === 'single') {
+      if (!form.value.categorieClientId) throw new Error('Catégorie client obligatoire')
+      if (Number(form.value.quantite) <= 0) throw new Error('Quantité invalide')
+    } else {
+      if (!categorieRows.value.length) throw new Error('Ajouter au moins une catégorie client')
+      for (const r of categorieRows.value) {
+        if (!r.categorieClientId) throw new Error('Catégorie client obligatoire')
+        if (Number(r.quantite) <= 0) throw new Error('Quantité invalide')
+      }
     }
-    if (selectedPlaceIds.value.length === 0) {
-      throw new Error('Sélectionner au moins une place')
+
+    if (nbPlaceRequired.value <= 0) throw new Error('Nombre de places invalide')
+    if (selectedPlaceIds.value.length !== nbPlaceRequired.value) {
+      throw new Error(`Sélectionner exactement ${nbPlaceRequired.value} place(s)`) 
     }
 
     const payload = {
       clientId: Number(form.value.clientId),
       seanceId: Number(form.value.seanceId),
-      items: selectedPlaceIds.value.map((placeId) => ({
-        placeId: Number(placeId),
-        categorieClientId: Number(form.value.categorieClientId),
-      })),
+      items: buildItemsFromSelection(),
     }
 
     const res = await fetch(API_RESERVATIONS, {
@@ -148,6 +223,9 @@ const submit = async () => {
 }
 
 onMounted(loadRefs)
+onMounted(() => {
+  if (categorieRows.value.length === 0) addCategorieRow()
+})
 </script>
 
 <template>
@@ -166,6 +244,32 @@ onMounted(loadRefs)
 
             <form class="row g-3" @submit.prevent="submit">
               <div class="col-12">
+                <label class="form-label">Mode d'insertion</label>
+                <div class="d-flex gap-3">
+                  <div class="form-check">
+                    <input
+                      id="mode-single"
+                      v-model="mode"
+                      class="form-check-input"
+                      type="radio"
+                      value="single"
+                    />
+                    <label class="form-check-label" for="mode-single">Simple</label>
+                  </div>
+                  <div class="form-check">
+                    <input
+                      id="mode-multiple"
+                      v-model="mode"
+                      class="form-check-input"
+                      type="radio"
+                      value="multiple"
+                    />
+                    <label class="form-check-label" for="mode-multiple">Multiple (par catégories)</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6">
                 <label class="form-label">Client</label>
                 <select v-model="form.clientId" class="form-select" required>
                   <option value="" disabled>Sélectionner...</option>
@@ -185,14 +289,65 @@ onMounted(loadRefs)
                 </select>
               </div>
 
-              <div class="col-12">
+              <div v-if="mode === 'single'" class="col-12">
                 <label class="form-label">Catégorie client</label>
-                <select v-model="form.categorieClientId" class="form-select" required>
-                  <option value="" disabled>Sélectionner...</option>
-                  <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">
-                    {{ cat.libelle }} ({{ cat.id }})
-                  </option>
-                </select>
+                <div class="row g-3">
+                  <div class="col-12 col-md-8">
+                    <select v-model="form.categorieClientId" class="form-select" required>
+                      <option value="" disabled>Sélectionner...</option>
+                      <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">
+                        {{ cat.libelle }} ({{ cat.id }})
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label">Quantité</label>
+                    <input v-model.number="form.quantite" class="form-control" type="number" min="1" step="1" required />
+                  </div>
+                </div>
+                <div class="text-muted mt-2">Nombre de places: {{ nbPlaceRequired }}</div>
+              </div>
+
+              <div v-else class="col-12">
+                <label class="form-label">Catégories client (multiple)</label>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th style="width: 60%">Catégorie</th>
+                        <th style="width: 30%">Quantité</th>
+                        <th style="width: 10%"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="r in categorieRows" :key="r.id">
+                        <td>
+                          <select v-model="r.categorieClientId" class="form-select" required>
+                            <option value="" disabled>Sélectionner...</option>
+                            <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">
+                              {{ cat.libelle }} ({{ cat.id }})
+                            </option>
+                          </select>
+                        </td>
+                        <td>
+                          <input v-model.number="r.quantite" class="form-control" type="number" min="1" step="1" required />
+                        </td>
+                        <td class="text-end">
+                          <button
+                            class="btn btn-sm btn-outline-danger"
+                            type="button"
+                            :disabled="categorieRows.length <= 1"
+                            @click="removeCategorieRow(r.id)"
+                          >
+                            Supprimer
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn btn-outline-primary" type="button" @click="addCategorieRow">Ajouter catégorie</button>
+                <div class="text-muted mt-2">Nombre de places: {{ nbPlaceRequired }}</div>
               </div>
 
               <div class="col-12">
@@ -211,14 +366,14 @@ onMounted(loadRefs)
                           ? 'btn-success'
                           : 'btn-outline-secondary',
                     ]"
-                    :disabled="p.occupee"
+                    :disabled="p.occupee || (!isSelected(p.id) && !canSelectMorePlaces)"
                     @click="togglePlace(p)"
                   >
                     {{ p.label }}
                   </button>
                 </div>
                 <div class="text-muted mt-2">
-                  Sélectionnées: {{ selectedPlaceIds.length }}
+                  Sélectionnées: {{ selectedPlaceIds.length }} / {{ nbPlaceRequired }}
                 </div>
               </div>
 

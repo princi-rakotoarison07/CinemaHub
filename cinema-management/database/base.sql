@@ -113,6 +113,7 @@ CREATE TABLE reservation (
   id_client INT NOT NULL REFERENCES client(id),
   id_seance INT NOT NULL REFERENCES seance(id),
   id_statut INT NOT NULL REFERENCES statut(id),
+  nb_place INT NOT NULL DEFAULT 0 CHECK (nb_place >= 0),
   montant_total NUMERIC(8,2) NOT NULL DEFAULT 0,
   date_reservation TIMESTAMPTZ DEFAULT now(),
   date_expiration TIMESTAMPTZ
@@ -290,8 +291,8 @@ INSERT INTO client (nom, prenom, email, telephone) VALUES
   ('Princi', 'Zo', 'princi@email.com', '0601020304');
 
 -- Création d'une réservation exemple pour Avatar le 10 janvier à 10h en Salle 1
-INSERT INTO reservation (id_client, id_seance, id_statut, montant_total, date_expiration) VALUES
-  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 19.00, now() + interval '15 minutes');
+INSERT INTO reservation (id_client, id_seance, id_statut, nb_place, montant_total, date_expiration) VALUES
+  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 2, 19.00, now() + interval '15 minutes');
 
 -- Ajout de tickets (2 places adultes standard)
 INSERT INTO ticket (id_reservation, id_place, id_categorie_client, prix) VALUES
