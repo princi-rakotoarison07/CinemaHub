@@ -200,11 +200,11 @@ onMounted(load)
               <table class="table table-striped">
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Client</th>
                     <th>Date/Heure séance</th>
                     <th>Film - Salle</th>
                     <th>Statut</th>
+                    <th>Nombre de places</th>
                     <th>Montant</th>
                     <th>Expiration</th>
                     <th>Actions</th>
@@ -212,11 +212,11 @@ onMounted(load)
                 </thead>
                 <tbody>
                   <tr v-for="r in reservations" :key="r.id">
-                    <td>{{ r.id }}</td>
                     <td>{{ getClientLabel(r.client?.id) }}</td>
                     <td>{{ formatDate(getSeanceDateHeure(r.seance?.id)) }}</td>
                     <td>{{ getFilmSalleLabelBySeanceId(r.seance?.id) }}</td>
                     <td>{{ r.statut }}</td>
+                    <td>{{ r.nbPlace }}</td>
                     <td>{{ r.montantTotal }}</td>
                     <td>{{ formatDate(r.dateExpiration) }}</td>
                     <td>
@@ -271,7 +271,6 @@ onMounted(load)
                             <table class="table table-sm mb-0">
                               <thead>
                                 <tr>
-                                  <th>ID</th>
                                   <th>Client</th>
                                   <th>Montant</th>
                                   <th>Expiration</th>
@@ -279,7 +278,6 @@ onMounted(load)
                               </thead>
                               <tbody>
                                 <tr v-for="d in row.details" :key="row.key + '|' + d.id">
-                                  <td>{{ d.id }}</td>
                                   <td>{{ d.client }}</td>
                                   <td>{{ d.montant.toFixed(2) }}</td>
                                   <td>{{ formatDate(d.expiration) }}</td>
