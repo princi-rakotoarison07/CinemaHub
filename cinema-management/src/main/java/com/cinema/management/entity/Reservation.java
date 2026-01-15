@@ -34,6 +34,9 @@ public class Reservation {
   @JoinColumn(name = "id_statut", nullable = false)
   private Statut statut;
 
+  @Column(name = "nb_place", nullable = false)
+  private Integer nbPlace;
+
   @Column(name = "montant_total", nullable = false)
   private BigDecimal montantTotal;
 
@@ -73,6 +76,14 @@ public class Reservation {
 
   public void setStatut(Statut statut) {
     this.statut = statut;
+  }
+
+  public Integer getNbPlace() {
+    return nbPlace;
+  }
+
+  public void setNbPlace(Integer nbPlace) {
+    this.nbPlace = nbPlace;
   }
 
   public BigDecimal getMontantTotal() {

@@ -29,9 +29,9 @@ logs/
 **/dist/
 **/.vite/
 
-# === Env files (keep your local secrets out of git) ===
-.env
-.env.*
+# # === Env files (keep your local secrets out of git) ===
+# .env
+# .env.*
 
 
 # === Optional: lockfiles (keep if you want reproducible installs)
