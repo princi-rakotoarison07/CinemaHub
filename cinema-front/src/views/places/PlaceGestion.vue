@@ -8,12 +8,16 @@ const toast = useToast()
 const API_SALLES = `${API_BASE_URL}/api/salles`
 const API_PLACES = `${API_BASE_URL}/api/places`
 const API_TYPE_PLACES = `${API_BASE_URL}/api/type-places`
+const API_TARIFS = `${API_BASE_URL}/api/tarifs`
+const API_CATEGORIES = `${API_BASE_URL}/api/categories-clients`
 
 const loading = ref(false)
 const error = ref('')
 
 const salles = ref([])
 const typePlaces = ref([])
+const tarifs = ref([])
+const categories = ref([])
 
 const expandedSalleIds = ref([])
 const placesBySalleId = ref({})
@@ -38,11 +42,20 @@ const loadRefs = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [sRes, tpRes] = await Promise.all([fetch(API_SALLES), fetch(API_TYPE_PLACES)])
+    const [sRes, tpRes, tRes, cRes] = await Promise.all([
+      fetch(API_SALLES),
+      fetch(API_TYPE_PLACES),
+      fetch(API_TARIFS),
+      fetch(API_CATEGORIES),
+    ])
     if (!sRes.ok) throw new Error(`Salles HTTP ${sRes.status}`)
     if (!tpRes.ok) throw new Error(`Type places HTTP ${tpRes.status}`)
+    if (!tRes.ok) throw new Error(`Tarifs HTTP ${tRes.status}`)
+    if (!cRes.ok) throw new Error(`Catégories HTTP ${cRes.status}`)
     salles.value = await sRes.json()
     typePlaces.value = await tpRes.json()
+    tarifs.value = await tRes.json()
+    categories.value = await cRes.json()
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)
@@ -74,6 +87,36 @@ const typePlaceById = computed(() => {
   return m
 })
 
+const categorieById = computed(() => {
+  const m = new Map()
+  for (const c of categories.value ?? []) {
+    if (c?.id != null) m.set(String(c.id), c)
+  }
+  return m
+})
+
+const adulteCategorieId = computed(() => {
+  for (const c of categories.value ?? []) {
+    if (String(c?.libelle ?? '').toUpperCase() === 'ADULTE') return String(c.id)
+  }
+  return ''
+})
+
+const prixAdulteByTypePlaceId = computed(() => {
+  const map = new Map()
+  const adulteId = adulteCategorieId.value
+  for (const t of tarifs.value ?? []) {
+    if (t?.actif === false) continue
+    const typeId = t?.typePlace?.id != null ? String(t.typePlace.id) : ''
+    const catId = t?.categorieClient?.id != null ? String(t.categorieClient.id) : ''
+    if (!typeId || !catId) continue
+    if (adulteId && catId !== adulteId) continue
+    if (t?.prix == null) continue
+    map.set(typeId, Number(t.prix))
+  }
+  return map
+})
+
 const palette = ['btn-primary', 'btn-success', 'btn-warning', 'btn-info', 'btn-secondary', 'btn-dark']
 
 const typePlaceColorById = computed(() => {
@@ -96,6 +139,27 @@ const getButtonClass = (p) => {
   const typeId = p?.typePlace?.id != null ? String(p.typePlace.id) : ''
   const base = typeId ? typePlaceColorById.value.get(typeId) : 'btn-outline-secondary'
   return base || 'btn-outline-secondary'
+}
+
+const computeTypeCounts = (places) => {
+  const map = new Map()
+  for (const p of places ?? []) {
+    const typeId = p?.typePlace?.id != null ? String(p.typePlace.id) : ''
+    const type = typeId ? typePlaceById.value.get(typeId) : null
+    const label = type?.libelle ?? (typeId ? `Type ${typeId}` : 'Inconnu')
+    const key = typeId || label
+    if (!map.has(key)) map.set(key, { typePlaceId: typeId, libelle: label, count: 0 })
+    map.get(key).count += 1
+  }
+  const arr = Array.from(map.values())
+  arr.sort((a, b) => String(a.libelle).localeCompare(String(b.libelle)))
+  return arr
+}
+
+const formatMoney = (n) => {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return '-'
+  return v.toFixed(2)
 }
 
 const nextTypePlaceId = (currentId) => {
@@ -231,22 +295,73 @@ onMounted(loadRefs)
                         <td colspan="4">
                           <div v-if="loadingPlacesBySalleId[String(s.id)]" class="text-muted">Chargement des places...</div>
 
-                          <div v-else class="d-flex flex-wrap gap-2">
-                            <button
-                              v-for="p in placesBySalleId[String(s.id)] ?? []"
-                              :key="p.id"
-                              type="button"
-                              class="btn btn-sm"
-                              :class="getButtonClass(p)"
-                              :disabled="isSaving(p.id)"
-                              @click="updatePlaceType(s.id, p)"
-                              :title="typePlaceById.get(String(p.typePlace?.id))?.libelle ?? ''"
-                            >
-                              {{ getPlaceLabel(p) }}
-                            </button>
+                          <div v-else class="d-flex gap-3 align-items-start">
+                            <div class="flex-grow-1 d-flex flex-wrap gap-2">
+                              <button
+                                v-for="p in placesBySalleId[String(s.id)] ?? []"
+                                :key="p.id"
+                                type="button"
+                                class="btn btn-sm"
+                                :class="getButtonClass(p)"
+                                :disabled="isSaving(p.id)"
+                                @click="updatePlaceType(s.id, p)"
+                                :title="typePlaceById.get(String(p.typePlace?.id))?.libelle ?? ''"
+                              >
+                                {{ getPlaceLabel(p) }}
+                              </button>
 
-                            <div v-if="(placesBySalleId[String(s.id)] ?? []).length === 0" class="text-muted">
-                              Aucune place
+                              <div v-if="(placesBySalleId[String(s.id)] ?? []).length === 0" class="text-muted">
+                                Aucune place
+                              </div>
+                            </div>
+
+                            <div class="place-config-panel ms-2">
+                              <div class="fw-semibold mb-2">Configuration de place (détails)</div>
+                              <div class="mb-2">
+                                <div class="text-muted">Maximum (capacité salle)</div>
+                                <div class="fw-semibold">{{ s.capacite }}</div>
+                              </div>
+
+                              <div class="mb-2">
+                                <div class="text-muted">Détail par type</div>
+                                <div
+                                  v-for="row in computeTypeCounts(placesBySalleId[String(s.id)] ?? [])"
+                                  :key="String(s.id) + '|' + row.typePlaceId + '|' + row.libelle"
+                                  class="d-flex justify-content-between"
+                                >
+                                  <span>
+                                    {{ row.libelle }}
+                                    {{ row.count }}
+                                    <span class="text-muted">tarif</span>
+                                    {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }}
+                                  </span>
+                                  <span class="fw-semibold">
+                                    {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }}
+                                  </span>
+                                </div>
+                                <div
+                                  v-if="computeTypeCounts(placesBySalleId[String(s.id)] ?? []).length === 0"
+                                  class="text-muted"
+                                >
+                                  -
+                                </div>
+                              </div>
+
+                              <div class="pt-2 border-top d-flex justify-content-between">
+                                <span class="text-muted">Total valeur max</span>
+                                <span class="fw-semibold">
+                                  {{
+                                    formatMoney(
+                                      computeTypeCounts(placesBySalleId[String(s.id)] ?? []).reduce(
+                                        (sum, r) =>
+                                          sum +
+                                          r.count * (prixAdulteByTypePlaceId.get(String(r.typePlaceId)) ?? 0),
+                                        0,
+                                      ),
+                                    )
+                                  }}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -270,3 +385,12 @@ onMounted(loadRefs)
     </div>
   </section>
 </template>
+
+<style scoped>
+.place-config-panel {
+  min-width: 240px;
+  max-width: 320px;
+  border-left: 1px solid #dee2e6;
+  padding-left: 1rem;
+}
+</style>

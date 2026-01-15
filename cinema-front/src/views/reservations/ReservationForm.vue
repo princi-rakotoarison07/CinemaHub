@@ -13,6 +13,8 @@ const API_SEANCES = `${API_BASE_URL}/api/seances`
 const API_CATEGORIES = `${API_BASE_URL}/api/categories-clients`
 const API_FILMS = `${API_BASE_URL}/api/films`
 const API_SALLES = `${API_BASE_URL}/api/salles`
+const API_TYPE_PLACES = `${API_BASE_URL}/api/type-places`
+const API_TARIFS = `${API_BASE_URL}/api/tarifs`
 
 const loading = ref(false)
 const error = ref('')
@@ -22,6 +24,8 @@ const seances = ref([])
 const categories = ref([])
 const films = ref([])
 const salles = ref([])
+const typePlaces = ref([])
+const tarifs = ref([])
 const places = ref([])
 const selectedPlaceIds = ref([])
 
@@ -113,28 +117,110 @@ const getSalleNom = (salleId) => {
   return s?.nom ?? `Salle ${salleId}`
 }
 
+const typePlaceById = computed(() => {
+  const m = new Map()
+  for (const tp of typePlaces.value ?? []) {
+    if (tp?.id != null) m.set(String(tp.id), tp)
+  }
+  return m
+})
+
+const adulteCategorieId = computed(() => {
+  for (const c of categories.value ?? []) {
+    if (String(c?.libelle ?? '').toUpperCase() === 'ADULTE') return String(c.id)
+  }
+  return ''
+})
+
+const prixAdulteByTypePlaceId = computed(() => {
+  const map = new Map()
+  const adulteId = adulteCategorieId.value
+  for (const t of tarifs.value ?? []) {
+    if (t?.actif === false) continue
+    const typeId = t?.typePlace?.id != null ? String(t.typePlace.id) : ''
+    const catId = t?.categorieClient?.id != null ? String(t.categorieClient.id) : ''
+    if (!typeId || !catId) continue
+    if (adulteId && catId !== adulteId) continue
+    if (t?.prix == null) continue
+    map.set(typeId, Number(t.prix))
+  }
+  return map
+})
+
+const selectedPlaces = computed(() => {
+  const ids = new Set((selectedPlaceIds.value ?? []).map((x) => String(x)))
+  return (places.value ?? []).filter((p) => ids.has(String(p?.id)))
+})
+
+const occupiedPlaces = computed(() => (places.value ?? []).filter((p) => Boolean(p?.occupee)))
+
+const groupPlacesByType = (list) => {
+  const map = new Map()
+  for (const p of list ?? []) {
+    const typeId = p?.typePlaceId != null ? String(p.typePlaceId) : ''
+    const tp = typeId ? typePlaceById.value.get(typeId) : null
+    const libelle = tp?.libelle ?? (typeId ? `Type ${typeId}` : 'Inconnu')
+    const key = typeId || libelle
+    if (!map.has(key)) map.set(key, { typePlaceId: typeId, libelle, count: 0 })
+    map.get(key).count += 1
+  }
+  const arr = Array.from(map.values())
+  arr.sort((a, b) => String(a.libelle).localeCompare(String(b.libelle)))
+  return arr
+}
+
+const selectedByType = computed(() => groupPlacesByType(selectedPlaces.value))
+
+const occupiedByType = computed(() => groupPlacesByType(occupiedPlaces.value))
+
+const totalReservedMontant = computed(() =>
+  selectedByType.value.reduce(
+    (sum, r) => sum + r.count * (prixAdulteByTypePlaceId.value.get(String(r.typePlaceId)) ?? 0),
+    0,
+  ),
+)
+
+const totalOccupiedMontant = computed(() =>
+  occupiedByType.value.reduce(
+    (sum, r) => sum + r.count * (prixAdulteByTypePlaceId.value.get(String(r.typePlaceId)) ?? 0),
+    0,
+  ),
+)
+
+const formatMoney = (n) => {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return '-'
+  return v.toFixed(2)
+}
+
 const loadRefs = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [cRes, sRes, catRes, fRes, saRes] = await Promise.all([
+    const [cRes, sRes, catRes, fRes, saRes, tpRes, tRes] = await Promise.all([
       fetch(API_CLIENTS),
       fetch(API_SEANCES),
       fetch(API_CATEGORIES),
       fetch(API_FILMS),
       fetch(API_SALLES),
+      fetch(API_TYPE_PLACES),
+      fetch(API_TARIFS),
     ])
     if (!cRes.ok) throw new Error(`Clients HTTP ${cRes.status}`)
     if (!sRes.ok) throw new Error(`Séances HTTP ${sRes.status}`)
     if (!catRes.ok) throw new Error(`Catégories HTTP ${catRes.status}`)
     if (!fRes.ok) throw new Error(`Films HTTP ${fRes.status}`)
     if (!saRes.ok) throw new Error(`Salles HTTP ${saRes.status}`)
+    if (!tpRes.ok) throw new Error(`Type places HTTP ${tpRes.status}`)
+    if (!tRes.ok) throw new Error(`Tarifs HTTP ${tRes.status}`)
 
     clients.value = await cRes.json()
     seances.value = await sRes.json()
     categories.value = await catRes.json()
     films.value = await fRes.json()
     salles.value = await saRes.json()
+    typePlaces.value = await tpRes.json()
+    tarifs.value = await tRes.json()
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)
@@ -437,6 +523,56 @@ onMounted(() => {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="mt-4 pt-3 border-top">
+                  <div class="fw-semibold mb-2">Détail par type réservé</div>
+
+                  <div v-if="selectedPlaceIds.length === 0" class="text-muted">Aucune place sélectionnée</div>
+
+                  <div v-else>
+                    <div
+                      v-for="row in selectedByType"
+                      :key="row.typePlaceId + '|' + row.libelle"
+                      class="d-flex justify-content-between"
+                    >
+                      <span>
+                        {{ row.count }} {{ row.libelle }} tarif {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }} total {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }}
+                      </span>
+                    </div>
+
+                    <div class="pt-2 mt-2 border-top d-flex justify-content-between">
+                      <span class="text-muted">TOTAL :</span>
+                      <span class="fw-semibold">{{ formatMoney(totalReservedMontant) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="mt-4 pt-3 border-top">
+                  <div class="fw-semibold mb-2">Détail par type non disponible</div>
+
+                  <div v-if="occupiedPlaces.length === 0" class="text-muted">Aucune place non disponible</div>
+
+                  <div v-else>
+                    <div
+                      v-for="row in occupiedByType"
+                      :key="'occ|' + row.typePlaceId + '|' + row.libelle"
+                      class="d-flex justify-content-between"
+                    >
+                      <span>
+                        {{ row.count }} {{ row.libelle }} tarif {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }} total {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }}
+                      </span>
+                    </div>
+
+                    <div class="pt-2 mt-2 border-top d-flex justify-content-between">
+                      <span class="text-muted">TOTAL :</span>
+                      <span class="fw-semibold">{{ formatMoney(totalOccupiedMontant) }}</span>
                     </div>
                   </div>
                 </div>
