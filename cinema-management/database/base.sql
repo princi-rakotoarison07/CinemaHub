@@ -198,7 +198,8 @@ INSERT INTO salle (nom, capacite) VALUES
   ('Salle 1', 150),
   ('Salle 2', 200),
   ('Salle 3', 100),
-  ('Salle 4', 10);
+  ('Salle 4', 10),
+  ('Salle 5', 100);
 
 -- Insertion des places pour Salle 1
 DO $$
@@ -281,6 +282,33 @@ BEGIN
 
     INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
       (4, 'A', num, type_id);
+  END LOOP;
+END $$;
+
+-- Insertion des places pour Salle 5 (100 places : 10 VIP, 20 PMR, 70 STANDARD)
+DO $$
+DECLARE
+  num INT;
+  type_standard_id INT;
+  type_pmr_id INT;
+  type_vip_id INT;
+  type_id INT;
+BEGIN
+  type_standard_id := (SELECT id FROM type_place WHERE libelle = 'STANDARD');
+  type_pmr_id := (SELECT id FROM type_place WHERE libelle = 'PMR');
+  type_vip_id := (SELECT id FROM type_place WHERE libelle = 'VIP');
+
+  FOR num IN 1..100 LOOP
+    IF num BETWEEN 1 AND 10 THEN
+      type_id := type_vip_id;
+    ELSIF num BETWEEN 11 AND 30 THEN
+      type_id := type_pmr_id;
+    ELSE
+      type_id := type_standard_id;
+    END IF;
+
+    INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
+      (5, 'A', num, type_id);
   END LOOP;
 END $$;
 
