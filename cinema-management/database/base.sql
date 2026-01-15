@@ -197,7 +197,8 @@ INSERT INTO film_genre (id_film, id_genre) VALUES
 INSERT INTO salle (nom, capacite) VALUES
   ('Salle 1', 150),
   ('Salle 2', 200),
-  ('Salle 3', 100);
+  ('Salle 3', 100),
+  ('Salle 4', 10);
 
 -- Insertion des places pour Salle 1
 DO $$
@@ -257,6 +258,29 @@ BEGIN
       INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
         (3, rangee_letter, num, type_standard_id);
     END LOOP;
+  END LOOP;
+END $$;
+
+-- Insertion des places pour Salle 4 (10 places : 6 standard, 4 PMR)
+DO $$
+DECLARE
+  num INT;
+  type_standard_id INT;
+  type_pmr_id INT;
+  type_id INT;
+BEGIN
+  type_standard_id := (SELECT id FROM type_place WHERE libelle = 'STANDARD');
+  type_pmr_id := (SELECT id FROM type_place WHERE libelle = 'PMR');
+
+  FOR num IN 1..10 LOOP
+    IF num BETWEEN 1 AND 4 THEN
+      type_id := type_pmr_id;
+    ELSE
+      type_id := type_standard_id;
+    END IF;
+
+    INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
+      (4, 'A', num, type_id);
   END LOOP;
 END $$;
 
