@@ -1,10 +1,12 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from '../../composables/useToast'
 import { API_BASE_URL } from '../../config/api'
 
 const API_BASE = `${API_BASE_URL}/api/seances`
 
+const router = useRouter()
 const toast = useToast()
 
 const seances = ref([])
@@ -36,6 +38,10 @@ const formatDate = (v) => {
 }
 
 onMounted(load)
+
+const goToPlaces = async (id) => {
+  await router.push(`/seances/${id}/places`)
+}
 </script>
 
 <template>
@@ -67,6 +73,7 @@ onMounted(load)
                     <th>Langue</th>
                     <th>Film (id)</th>
                     <th>Salle (id)</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -77,9 +84,14 @@ onMounted(load)
                     <td>{{ s.langue }}</td>
                     <td>{{ s.film?.id }}</td>
                     <td>{{ s.salle?.id }}</td>
+                    <td class="text-end">
+                      <button class="btn btn-sm btn-outline-secondary" type="button" @click="goToPlaces(s.id)">
+                        Places
+                      </button>
+                    </td>
                   </tr>
                   <tr v-if="seances.length === 0">
-                    <td colspan="6" class="text-center text-muted">Aucun élément</td>
+                    <td colspan="7" class="text-center text-muted">Aucun élément</td>
                   </tr>
                 </tbody>
               </table>

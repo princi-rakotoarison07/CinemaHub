@@ -4,11 +4,15 @@ import com.cinema.management.entity.Seance;
 import com.cinema.management.entity.Place;
 import com.cinema.management.service.SeanceService;
 import com.cinema.management.service.PlaceService;
+import com.cinema.management.service.SeancePlaceService;
+import com.cinema.management.entity.SeancePlace;
 import com.cinema.management.repository.TicketRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,13 +29,19 @@ public class SeanceController {
 
   private final SeanceService seanceService;
   private final PlaceService placeService;
+  private final SeancePlaceService seancePlaceService;
   private final TicketRepository ticketRepository;
 
   private static final List<String> STATUTS_OCCUPES = List.of("EN_ATTENTE", "CONFIRMEE", "PAYEE");
 
-  public SeanceController(SeanceService seanceService, PlaceService placeService, TicketRepository ticketRepository) {
+  public SeanceController(
+      SeanceService seanceService,
+      PlaceService placeService,
+      SeancePlaceService seancePlaceService,
+      TicketRepository ticketRepository) {
     this.seanceService = seanceService;
     this.placeService = placeService;
+    this.seancePlaceService = seancePlaceService;
     this.ticketRepository = ticketRepository;
   }
 
@@ -69,17 +79,32 @@ public class SeanceController {
     }
 
     List<Place> places = placeService.findBySalleId(salleId);
+    Map<Long, SeancePlace> byPlaceId =
+        seancePlaceService.findBySeanceId(id).stream()
+            .collect(Collectors.toMap(sp -> sp.getPlace().getId(), Function.identity()));
     Collection<Long> occupiedIds =
         new HashSet<>(ticketRepository.findOccupiedPlaceIdsBySeanceId(id, STATUTS_OCCUPES));
 
     return places.stream()
         .map(p -> {
-          Long typePlaceId = p.getTypePlace() != null ? p.getTypePlace().getId() : null;
+          SeancePlace sp = byPlaceId.get(p.getId());
+          Long typePlaceId =
+              sp != null && sp.getTypePlace() != null ? sp.getTypePlace().getId() : null;
+          if (typePlaceId == null) {
+            typePlaceId = p.getTypePlace() != null ? p.getTypePlace().getId() : null;
+          }
           boolean occupee = occupiedIds.contains(p.getId());
           String label = (p.getRangee() != null ? p.getRangee() : "") + (p.getNumero() != null ? p.getNumero() : "");
           return new SeancePlaceDto(p.getId(), p.getRangee(), p.getNumero(), label, typePlaceId, occupee);
         })
         .collect(Collectors.toList());
+  }
+
+  @PutMapping("/{id}/places/types")
+  public List<SeancePlaceDto> updateTypesForSeance(
+      @PathVariable Long id, @RequestBody List<SeancePlaceService.UpdateItem> items) {
+    seancePlaceService.updateTypes(id, items);
+    return getPlacesForSeance(id);
   }
 
   private static SeanceDto toDto(Seance s) {

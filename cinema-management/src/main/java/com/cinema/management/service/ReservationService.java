@@ -5,6 +5,7 @@ import com.cinema.management.entity.Client;
 import com.cinema.management.entity.Place;
 import com.cinema.management.entity.Reservation;
 import com.cinema.management.entity.Seance;
+import com.cinema.management.entity.SeancePlace;
 import com.cinema.management.entity.Statut;
 import com.cinema.management.entity.Tarif;
 import com.cinema.management.entity.Ticket;
@@ -12,6 +13,7 @@ import com.cinema.management.repository.CategorieClientRepository;
 import com.cinema.management.repository.ClientRepository;
 import com.cinema.management.repository.PlaceRepository;
 import com.cinema.management.repository.ReservationRepository;
+import com.cinema.management.repository.SeancePlaceRepository;
 import com.cinema.management.repository.StatutRepository;
 import com.cinema.management.repository.TarifRepository;
 import com.cinema.management.repository.TicketRepository;
@@ -35,6 +37,7 @@ public class ReservationService {
   private final ClientRepository clientRepository;
   private final SeanceRepository seanceRepository;
   private final PlaceRepository placeRepository;
+  private final SeancePlaceRepository seancePlaceRepository;
   private final CategorieClientRepository categorieClientRepository;
   private final TarifRepository tarifRepository;
   private final StatutRepository statutRepository;
@@ -45,6 +48,7 @@ public class ReservationService {
       ClientRepository clientRepository,
       SeanceRepository seanceRepository,
       PlaceRepository placeRepository,
+      SeancePlaceRepository seancePlaceRepository,
       CategorieClientRepository categorieClientRepository,
       TarifRepository tarifRepository,
       StatutRepository statutRepository) {
@@ -53,6 +57,7 @@ public class ReservationService {
     this.clientRepository = clientRepository;
     this.seanceRepository = seanceRepository;
     this.placeRepository = placeRepository;
+    this.seancePlaceRepository = seancePlaceRepository;
     this.categorieClientRepository = categorieClientRepository;
     this.tarifRepository = tarifRepository;
     this.statutRepository = statutRepository;
@@ -121,7 +126,18 @@ public class ReservationService {
         throw new IllegalStateException("Place déjà réservée pour cette séance");
       }
 
-      Long typePlaceId = place.getTypePlace().getId();
+      Long typePlaceId = null;
+      Optional<SeancePlace> seancePlaceOpt =
+          seancePlaceRepository.findByIdSeanceIdAndIdPlaceId(seance.getId(), place.getId());
+      if (seancePlaceOpt.isPresent() && seancePlaceOpt.get().getTypePlace() != null) {
+        typePlaceId = seancePlaceOpt.get().getTypePlace().getId();
+      }
+      if (typePlaceId == null && place.getTypePlace() != null) {
+        typePlaceId = place.getTypePlace().getId();
+      }
+      if (typePlaceId == null) {
+        throw new IllegalStateException("Type de place introuvable");
+      }
       Tarif tarif =
           tarifRepository
               .findFirstByTypePlaceIdAndCategorieClientIdAndActifTrueOrderByDateDebutDesc(
