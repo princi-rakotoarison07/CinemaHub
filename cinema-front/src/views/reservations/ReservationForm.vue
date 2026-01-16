@@ -30,6 +30,7 @@ const tarifs = ref([])
 const configurationTarifs = ref([])
 const places = ref([])
 const selectedPlaceIds = ref([])
+const selectedCategorieByPlaceId = ref({})
 
 const mode = ref('single')
 
@@ -37,6 +38,7 @@ const form = ref({
   clientId: '',
   seanceId: '',
   categorieClientId: '',
+  typePlaceId: '',
   quantite: 1,
 })
 
@@ -48,6 +50,7 @@ const createNewCategorieRow = () => {
   return {
     id: `new-${newRowCounter.value}`,
     categorieClientId: '',
+    typePlaceId: '',
     quantite: 1,
   }
 }
@@ -86,6 +89,20 @@ const categorieCountById = computed(() => {
 })
 
 const buildItemsFromSelection = () => {
+  const map = selectedCategorieByPlaceId.value ?? {}
+  const canUseMapping =
+    selectedPlaceIds.value.length > 0 &&
+    selectedPlaceIds.value.every((pid) => map[String(pid)] != null && String(map[String(pid)]) !== '')
+
+  if (canUseMapping) {
+    return selectedPlaceIds.value
+      .map((pid) => ({
+        placeId: Number(pid),
+        categorieClientId: Number(map[String(pid)]),
+      }))
+      .filter((x) => x.placeId && x.categorieClientId)
+  }
+
   const placeIds = selectedPlaceIds.value.map((x) => Number(x))
   const cats = Array.from(categorieCountById.value.entries())
     .map(([categorieClientId, quantite]) => ({ categorieClientId: Number(categorieClientId), quantite: Number(quantite) }))
@@ -349,6 +366,7 @@ const loadRefs = async () => {
 const loadPlacesForSeance = async () => {
   places.value = []
   selectedPlaceIds.value = []
+  selectedCategorieByPlaceId.value = {}
   const seanceId = selectedSeance.value?.id
   if (!seanceId) return
 
@@ -370,11 +388,96 @@ watch(
 
 const isSelected = (placeId) => selectedPlaceIds.value.includes(placeId)
 
+const autoSelectPlaces = () => {
+  const requests = []
+  if (mode.value === 'single') {
+    const catId = String(form.value.categorieClientId ?? '')
+    const qty = Number(form.value.quantite ?? 0)
+    const typeId = String(form.value.typePlaceId ?? '')
+    if (!catId) {
+      toast.error('Catégorie client obligatoire')
+      return
+    }
+    if (!typeId) {
+      toast.error('Type de place obligatoire')
+      return
+    }
+    if (!qty || qty <= 0) {
+      toast.error('Quantité invalide')
+      return
+    }
+    requests.push({ categorieClientId: catId, quantite: qty, typePlaceId: typeId })
+  } else {
+    for (const r of categorieRows.value ?? []) {
+      const catId = String(r?.categorieClientId ?? '')
+      const qty = Number(r?.quantite ?? 0)
+      const typeId = String(r?.typePlaceId ?? '')
+      if (!catId) {
+        toast.error('Catégorie client obligatoire')
+        return
+      }
+      if (!typeId) {
+        toast.error('Type de place obligatoire')
+        return
+      }
+      if (!qty || qty <= 0) {
+        toast.error('Quantité invalide')
+        return
+      }
+      requests.push({ categorieClientId: catId, quantite: qty, typePlaceId: typeId })
+    }
+  }
+
+  const sortedCandidates = (places.value ?? [])
+    .filter((p) => p && !p.occupee)
+    .slice()
+    .sort((a, b) => {
+      const ra = String(a?.rangee ?? '')
+      const rb = String(b?.rangee ?? '')
+      const r = ra.localeCompare(rb)
+      if (r !== 0) return r
+      const na = Number(a?.numero ?? 0)
+      const nb = Number(b?.numero ?? 0)
+      return na - nb
+    })
+
+  const used = new Set()
+  const picked = []
+  const mapping = {}
+
+  for (const req of requests) {
+    const need = Number(req.quantite)
+    const typeId = String(req.typePlaceId)
+    const matches = sortedCandidates.filter((p) => String(p?.typePlaceId ?? '') === typeId && !used.has(String(p.id)))
+    if (matches.length < need) {
+      toast.error(`Places disponibles insuffisantes pour le type demandé (${matches.length}/${need})`)
+      return
+    }
+    for (let i = 0; i < need; i++) {
+      const p = matches[i]
+      used.add(String(p.id))
+      picked.push(p.id)
+      mapping[String(p.id)] = String(req.categorieClientId)
+    }
+  }
+
+  selectedPlaceIds.value = picked
+  selectedCategorieByPlaceId.value = mapping
+}
+
+const clearSelection = () => {
+  selectedPlaceIds.value = []
+  selectedCategorieByPlaceId.value = {}
+}
+
 const togglePlace = (p) => {
   if (p.occupee) return
   const id = p.id
   if (isSelected(id)) {
     selectedPlaceIds.value = selectedPlaceIds.value.filter((x) => x !== id)
+    const m = { ...(selectedCategorieByPlaceId.value ?? {}) }
+    delete m[String(id)]
+    selectedCategorieByPlaceId.value = m
   } else {
     if (!canSelectMorePlaces.value) return
     selectedPlaceIds.value = [...selectedPlaceIds.value, id]
@@ -518,12 +621,21 @@ onMounted(() => {
                   <div class="col-12">
                     <div v-if="mode === 'single'">
                       <div class="row g-3">
-                        <div class="col-12 col-md-8">
+                        <div class="col-12 col-md-4">
                           <label class="form-label">Catégorie client</label>
                           <select v-model="form.categorieClientId" class="form-select" required>
                             <option value="" disabled>Sélectionner...</option>
                             <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">
                               {{ cat.libelle }} ({{ cat.id }})
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                          <label class="form-label">Type de place</label>
+                          <select v-model="form.typePlaceId" class="form-select" required>
+                            <option value="" disabled>Sélectionner...</option>
+                            <option v-for="tp in typePlaces" :key="tp.id" :value="String(tp.id)">
+                              {{ tp.libelle }}
                             </option>
                           </select>
                         </div>
@@ -540,8 +652,9 @@ onMounted(() => {
                         <table class="table table-sm align-middle">
                           <thead>
                             <tr>
-                              <th style="width: 60%">Catégorie</th>
-                              <th style="width: 30%">Quantité</th>
+                              <th style="width: 45%">Catégorie</th>
+                              <th style="width: 35%">Type de place</th>
+                              <th style="width: 10%">Quantité</th>
                               <th style="width: 10%"></th>
                             </tr>
                           </thead>
@@ -552,6 +665,14 @@ onMounted(() => {
                                   <option value="" disabled>Sélectionner...</option>
                                   <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">
                                     {{ cat.libelle }} ({{ cat.id }})
+                                  </option>
+                                </select>
+                              </td>
+                              <td>
+                                <select v-model="r.typePlaceId" class="form-select" required>
+                                  <option value="" disabled>Sélectionner...</option>
+                                  <option v-for="tp in typePlaces" :key="tp.id" :value="String(tp.id)">
+                                    {{ tp.libelle }}
                                   </option>
                                 </select>
                               </td>
@@ -599,14 +720,23 @@ onMounted(() => {
                 <div class="card">
                   <div class="card-body places-card-body">
                     <h6 class="card-title">Sélection des places</h6>
-                    
+
                     <div v-if="!form.seanceId" class="alert alert-warning">
                       <i class="bi bi-info-circle"></i> Veuillez sélectionner une séance pour voir les places disponibles.
                     </div>
 
                     <div v-if="!form.seanceId" class="places-grid mb-3"></div>
-                    
+
                     <div v-else>
+                      <div class="d-flex gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" :disabled="!places.length" @click="autoSelectPlaces">
+                          Sélection automatique
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" :disabled="selectedPlaceIds.length === 0" @click="clearSelection">
+                          Effacer
+                        </button>
+                      </div>
+
                       <div class="places-grid mb-3">
                         <div class="d-flex flex-wrap gap-1">
                           <button
@@ -698,7 +828,7 @@ onMounted(() => {
                       </span>
                     </div>
 
-                    <div class="pt-2 mt-2 border-top d-flex justify-content-between">
+                    <div class="pt-2 mt-2 border-top d-flex gap-2">
                       <span class="text-muted">TOTAL :</span>
                       <span class="fw-semibold">{{ formatMoney(totalReservedMontant) }}</span>
                     </div>
@@ -723,7 +853,7 @@ onMounted(() => {
                       </span>
                     </div>
 
-                    <div class="pt-2 mt-2 border-top d-flex justify-content-between">
+                    <div class="pt-2 mt-2 border-top d-flex gap-2">
                       <span class="text-muted">TOTAL :</span>
                       <span class="fw-semibold">{{ formatMoney(totalOccupiedMontant) }}</span>
                     </div>
