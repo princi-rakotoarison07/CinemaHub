@@ -94,7 +94,13 @@ const load = async () => {
     const list = await res.json()
 
     tarifsOriginal.value = Array.isArray(list) ? list : []
-    rows.value = tarifsOriginal.value.map(toRow)
+    rows.value = [...tarifsOriginal.value]
+      .sort((a, b) => {
+        const ai = a?.id != null ? Number(a.id) : Number.POSITIVE_INFINITY
+        const bi = b?.id != null ? Number(b.id) : Number.POSITIVE_INFINITY
+        return ai - bi
+      })
+      .map(toRow)
     newRowCounter.value = 0
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'

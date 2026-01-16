@@ -334,22 +334,21 @@ INSERT INTO seance (id_film, id_salle, date_heure, langue, version) VALUES
   (1, 3, '2026-01-10 20:00:00+01', 'Français', 'VOST');
 
 -- Insertion de la grille tarifaire
-INSERT INTO tarif (id_type_place, id_categorie_client, prix, actif) VALUES
-  -- STANDARD
-  ((SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 9.50, true),
-  ((SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 6.00, true),
-  ((SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 7.50, true),
-  ((SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 7.00, true),
-  -- VIP
-  ((SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 15.00, true),
-  ((SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 12.00, true),
-  ((SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 13.00, true),
-  ((SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 13.00, true),
-  -- PMR
-  ((SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 9.50, true),
-  ((SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 6.00, true),
-  ((SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 7.50, true),
-  ((SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 7.00, true);
+INSERT INTO tarif (id, id_type_place, id_categorie_client, prix, actif) VALUES
+  (3, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 20000, true),
+  (4, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 20000, true),
+  (1, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 20000, true),
+  (5, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 100000, true),
+  (6, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 100000, true),
+  (7, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 100000, true),
+  (8, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 100000, true),
+  (9, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 50000, true),
+  (10, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 50000, true),
+  (11, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 50000, true),
+  (12, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 50000, true),
+  (2, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 15000, true);
+
+SELECT setval('tarif_id_seq', (SELECT COALESCE(MAX(id), 1) FROM tarif));
 
 -- Insertion d'un client exemple
 INSERT INTO client (nom, prenom, email, telephone) VALUES
@@ -357,18 +356,18 @@ INSERT INTO client (nom, prenom, email, telephone) VALUES
 
 -- Création d'une réservation exemple pour Avatar le 10 janvier à 10h en Salle 1
 INSERT INTO reservation (id_client, id_seance, id_statut, nb_place, montant_total, date_expiration) VALUES
-  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 2, 19.00, now() + interval '15 minutes');
+  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 2, 40000, now() + interval '15 minutes');
 
 -- Ajout de tickets (2 places adultes standard)
 INSERT INTO ticket (id_reservation, id_place, id_categorie_client, prix) VALUES
   (1, 
    (SELECT id FROM place WHERE id_salle = 1 AND rangee = 'E' AND numero = 7), 
    (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 
-   9.50),
+   20000),
   (1, 
    (SELECT id FROM place WHERE id_salle = 1 AND rangee = 'E' AND numero = 8), 
    (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 
-   9.50);
+   20000);
 
 -- ------------------------------
 -- REQUÊTES UTILES

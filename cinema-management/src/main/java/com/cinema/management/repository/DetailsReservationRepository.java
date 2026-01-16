@@ -13,4 +13,7 @@ public interface DetailsReservationRepository extends JpaRepository<DetailsReser
 
   @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "categorieClient"})
   Optional<DetailsReservation> findById(Long id);
+
+  @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "place.typePlace", "categorieClient"})
+  List<DetailsReservation> findByReservationId(Long reservationId);
 }

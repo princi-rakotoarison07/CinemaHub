@@ -8,6 +8,7 @@ const API_CLIENTS = `${API_BASE_URL}/api/clients`
 const API_SEANCES = `${API_BASE_URL}/api/seances`
 const API_FILMS = `${API_BASE_URL}/api/films`
 const API_SALLES = `${API_BASE_URL}/api/salles`
+const API_DETAILS_RESERVATION = `${API_BASE_URL}/api/details-reservations`
 
 const toast = useToast()
 
@@ -17,6 +18,8 @@ const seances = ref([])
 const films = ref([])
 const salles = ref([])
 const expandedCaBuckets = ref({})
+const detailsByReservationId = ref({})
+const loadingDetailsByReservationId = ref({})
 const loading = ref(false)
 const error = ref('')
 
@@ -34,6 +37,48 @@ const payReservation = async (id) => {
     await load()
   } catch (e) {
     toast.error(e?.message ?? 'Erreur paiement')
+  }
+}
+
+const expandedReservationDetails = ref({})
+
+const isReservationDetailsExpanded = (reservationId) =>
+  Boolean(expandedReservationDetails.value[String(reservationId ?? '')])
+
+const toggleReservationDetails = async (reservationId) => {
+  const key = String(reservationId ?? '')
+  if (!key) return
+
+  const next = !expandedReservationDetails.value[key]
+  expandedReservationDetails.value = {
+    ...expandedReservationDetails.value,
+    [key]: next,
+  }
+
+  if (!next) return
+  if (detailsByReservationId.value[key]) return
+  if (loadingDetailsByReservationId.value[key]) return
+
+  loadingDetailsByReservationId.value = {
+    ...loadingDetailsByReservationId.value,
+    [key]: true,
+  }
+
+  try {
+    const res = await fetch(`${API_DETAILS_RESERVATION}?reservationId=${encodeURIComponent(key)}`)
+    if (!res.ok) throw new Error(`Détails réservation HTTP ${res.status}`)
+    const list = await res.json()
+    detailsByReservationId.value = {
+      ...detailsByReservationId.value,
+      [key]: Array.isArray(list) ? list : [],
+    }
+  } catch (e) {
+    toast.error(e?.message ?? 'Erreur lors du chargement des détails')
+  } finally {
+    loadingDetailsByReservationId.value = {
+      ...loadingDetailsByReservationId.value,
+      [key]: false,
+    }
   }
 }
 
@@ -157,6 +202,9 @@ const load = async () => {
     films.value = await fRes.json()
     salles.value = await saRes.json()
     expandedCaBuckets.value = {}
+    detailsByReservationId.value = {}
+    loadingDetailsByReservationId.value = {}
+    expandedReservationDetails.value = {}
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)
@@ -271,17 +319,63 @@ onMounted(load)
                             <table class="table table-sm mb-0">
                               <thead>
                                 <tr>
+                                  <th style="width: 1%"></th>
                                   <th>Client</th>
                                   <th>Montant</th>
                                   <th>Expiration</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                <tr v-for="d in row.details" :key="row.key + '|' + d.id">
-                                  <td>{{ d.client }}</td>
-                                  <td>{{ d.montant.toFixed(2) }}</td>
-                                  <td>{{ formatDate(d.expiration) }}</td>
-                                </tr>
+                                <template v-for="d in row.details" :key="row.key + '|' + d.id">
+                                  <tr>
+                                    <td>
+                                      <button
+                                        class="btn btn-sm btn-outline-primary"
+                                        type="button"
+                                        @click="toggleReservationDetails(d.id)"
+                                      >
+                                        {{ isReservationDetailsExpanded(d.id) ? '-' : '+' }}
+                                      </button>
+                                    </td>
+                                    <td>{{ d.client }}</td>
+                                    <td>{{ d.montant.toFixed(2) }}</td>
+                                    <td>{{ formatDate(d.expiration) }}</td>
+                                  </tr>
+                                  <tr v-if="isReservationDetailsExpanded(d.id)">
+                                    <td colspan="4">
+                                      <div v-if="loadingDetailsByReservationId[String(d.id)]" class="text-muted">Chargement détails...</div>
+                                      <div v-else>
+                                        <div v-if="(detailsByReservationId[String(d.id)] ?? []).length === 0" class="text-muted">
+                                          Aucun détail
+                                        </div>
+
+                                        <div v-else class="table-responsive">
+                                          <table class="table table-sm mb-0">
+                                            <thead>
+                                              <tr>
+                                                <th>Place</th>
+                                                <th>Type</th>
+                                                <th>Catégorie</th>
+                                                <th class="text-end">Prix</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              <tr
+                                                v-for="it in detailsByReservationId[String(d.id)]"
+                                                :key="String(d.id) + '|' + String(it.id)"
+                                              >
+                                                <td>{{ it?.place?.label ?? it?.place?.id }}</td>
+                                                <td>{{ it?.place?.typePlaceLibelle ?? it?.place?.typePlaceId }}</td>
+                                                <td>{{ it?.categorieClient?.libelle ?? it?.categorieClient?.id }}</td>
+                                                <td class="text-end">{{ it?.prix }}</td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </template>
                               </tbody>
                             </table>
                           </div>
