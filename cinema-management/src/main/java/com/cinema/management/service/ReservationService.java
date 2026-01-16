@@ -2,6 +2,7 @@ package com.cinema.management.service;
 
 import com.cinema.management.entity.CategorieClient;
 import com.cinema.management.entity.Client;
+import com.cinema.management.entity.DetailsReservation;
 import com.cinema.management.entity.Place;
 import com.cinema.management.entity.Reservation;
 import com.cinema.management.entity.Seance;
@@ -10,6 +11,7 @@ import com.cinema.management.entity.Tarif;
 import com.cinema.management.entity.Ticket;
 import com.cinema.management.repository.CategorieClientRepository;
 import com.cinema.management.repository.ClientRepository;
+import com.cinema.management.repository.DetailsReservationRepository;
 import com.cinema.management.repository.PlaceRepository;
 import com.cinema.management.repository.ReservationRepository;
 import com.cinema.management.repository.StatutRepository;
@@ -32,6 +34,7 @@ public class ReservationService {
 
   private final ReservationRepository reservationRepository;
   private final TicketRepository ticketRepository;
+  private final DetailsReservationRepository detailsReservationRepository;
   private final ClientRepository clientRepository;
   private final SeanceRepository seanceRepository;
   private final PlaceRepository placeRepository;
@@ -42,6 +45,7 @@ public class ReservationService {
   public ReservationService(
       ReservationRepository reservationRepository,
       TicketRepository ticketRepository,
+      DetailsReservationRepository detailsReservationRepository,
       ClientRepository clientRepository,
       SeanceRepository seanceRepository,
       PlaceRepository placeRepository,
@@ -50,6 +54,7 @@ public class ReservationService {
       StatutRepository statutRepository) {
     this.reservationRepository = reservationRepository;
     this.ticketRepository = ticketRepository;
+    this.detailsReservationRepository = detailsReservationRepository;
     this.clientRepository = clientRepository;
     this.seanceRepository = seanceRepository;
     this.placeRepository = placeRepository;
@@ -108,6 +113,7 @@ public class ReservationService {
 
     BigDecimal total = BigDecimal.ZERO;
     List<Ticket> tickets = new ArrayList<>();
+    List<DetailsReservation> details = new ArrayList<>();
 
     for (Item item : items) {
       Place place = placeRepository.findById(item.placeId()).orElseThrow();
@@ -135,10 +141,19 @@ public class ReservationService {
       ticket.setPrix(tarif.getPrix());
 
       tickets.add(ticket);
+
+      DetailsReservation detail = new DetailsReservation();
+      detail.setReservation(reservation);
+      detail.setPlace(place);
+      detail.setCategorieClient(categorie);
+      detail.setPrix(tarif.getPrix());
+
+      details.add(detail);
       total = total.add(tarif.getPrix());
     }
 
     ticketRepository.saveAll(tickets);
+    detailsReservationRepository.saveAll(details);
 
     reservation.setMontantTotal(total);
     return reservationRepository.save(reservation);

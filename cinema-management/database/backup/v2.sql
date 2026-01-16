@@ -122,19 +122,6 @@ CREATE TABLE reservation (
 CREATE INDEX idx_reservation_client ON reservation(id_client);
 CREATE INDEX idx_reservation_seance ON reservation(id_seance);
 
-CREATE TABLE details_reservation (
-  id SERIAL PRIMARY KEY,
-  id_reservation INT NOT NULL REFERENCES reservation(id) ON DELETE CASCADE,
-  id_place INT NOT NULL REFERENCES place(id),
-  id_categorie_client INT NOT NULL REFERENCES categorie_client(id),
-  prix NUMERIC(6,2) NOT NULL,
-  cree_le TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (id_reservation, id_place)
-);
-
-CREATE INDEX idx_details_reservation_reservation ON details_reservation(id_reservation);
-CREATE INDEX idx_details_reservation_place ON details_reservation(id_place);
-
 -- ------------------------------
 -- TICKETS (BILLETS)
 -- ------------------------------

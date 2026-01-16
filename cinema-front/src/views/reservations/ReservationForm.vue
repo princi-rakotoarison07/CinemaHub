@@ -125,6 +125,14 @@ const typePlaceById = computed(() => {
   return m
 })
 
+const categorieById = computed(() => {
+  const m = new Map()
+  for (const c of categories.value ?? []) {
+    if (c?.id != null) m.set(String(c.id), c)
+  }
+  return m
+})
+
 const adulteCategorieId = computed(() => {
   for (const c of categories.value ?? []) {
     if (String(c?.libelle ?? '').toUpperCase() === 'ADULTE') return String(c.id)
@@ -145,6 +153,30 @@ const prixAdulteByTypePlaceId = computed(() => {
     map.set(typeId, Number(t.prix))
   }
   return map
+})
+
+const prixByTypePlaceAndCategorieId = computed(() => {
+  const map = new Map()
+  for (const t of tarifs.value ?? []) {
+    if (t?.actif === false) continue
+    const typeId = t?.typePlace?.id != null ? String(t.typePlace.id) : ''
+    const catId = t?.categorieClient?.id != null ? String(t.categorieClient.id) : ''
+    if (!typeId || !catId) continue
+    if (t?.prix == null) continue
+    map.set(`${typeId}|${catId}`, Number(t.prix))
+  }
+  return map
+})
+
+const placeTypeIdByPlaceId = computed(() => {
+  const m = new Map()
+  for (const p of places.value ?? []) {
+    if (p?.id == null) continue
+    const typeId = p?.typePlaceId != null ? String(p.typePlaceId) : ''
+    if (!typeId) continue
+    m.set(String(p.id), typeId)
+  }
+  return m
 })
 
 const selectedPlaces = computed(() => {
@@ -169,15 +201,54 @@ const groupPlacesByType = (list) => {
   return arr
 }
 
+const selectedItems = computed(() => buildItemsFromSelection())
+
+const selectedByTypeAndCategorie = computed(() => {
+  const map = new Map()
+
+  for (const it of selectedItems.value ?? []) {
+    const placeId = it?.placeId != null ? String(it.placeId) : ''
+    const catId = it?.categorieClientId != null ? String(it.categorieClientId) : ''
+    if (!placeId || !catId) continue
+
+    const typeId = placeTypeIdByPlaceId.value.get(placeId) ?? ''
+    const tp = typeId ? typePlaceById.value.get(typeId) : null
+    const typeLibelle = tp?.libelle ?? (typeId ? `Type ${typeId}` : 'Inconnu')
+
+    const cat = categorieById.value.get(catId)
+    const catLibelle = cat?.libelle ?? (catId ? `Cat ${catId}` : 'Inconnu')
+
+    const key = `${typeId}|${catId}`
+    if (!map.has(key)) {
+      map.set(key, {
+        typePlaceId: typeId,
+        typeLibelle,
+        categorieClientId: catId,
+        categorieLibelle: catLibelle,
+        count: 0,
+      })
+    }
+    map.get(key).count += 1
+  }
+
+  const arr = Array.from(map.values())
+  arr.sort((a, b) => {
+    const t = String(a.typeLibelle).localeCompare(String(b.typeLibelle))
+    if (t !== 0) return t
+    return String(a.categorieLibelle).localeCompare(String(b.categorieLibelle))
+  })
+  return arr
+})
+
 const selectedByType = computed(() => groupPlacesByType(selectedPlaces.value))
 
 const occupiedByType = computed(() => groupPlacesByType(occupiedPlaces.value))
 
 const totalReservedMontant = computed(() =>
-  selectedByType.value.reduce(
-    (sum, r) => sum + r.count * (prixAdulteByTypePlaceId.value.get(String(r.typePlaceId)) ?? 0),
-    0,
-  ),
+  selectedByTypeAndCategorie.value.reduce((sum, r) => {
+    const prix = prixByTypePlaceAndCategorieId.value.get(`${String(r.typePlaceId)}|${String(r.categorieClientId)}`) ?? 0
+    return sum + r.count * prix
+  }, 0),
 )
 
 const totalOccupiedMontant = computed(() =>
@@ -262,6 +333,19 @@ const togglePlace = (p) => {
     if (!canSelectMorePlaces.value) return
     selectedPlaceIds.value = [...selectedPlaceIds.value, id]
   }
+}
+
+const getPlaceLabelClass = (p) => {
+  if (p?.occupee || isSelected(p?.id)) return 'text-white'
+
+  const typeId = p?.typePlaceId != null ? String(p.typePlaceId) : ''
+  const libelle = typeId ? typePlaceById.value.get(typeId)?.libelle : ''
+  const upper = String(libelle ?? '').toUpperCase()
+
+  if (upper === 'STANDARD') return 'text-primary'
+  if (upper === 'VIP') return 'text-warning'
+  if (upper === 'PMR') return 'text-info'
+  return 'text-dark'
 }
 
 const submit = async () => {
@@ -495,7 +579,7 @@ onMounted(() => {
                             @click="togglePlace(p)"
                             :title="p.occupee ? 'Place occupée' : 'Cliquer pour sélectionner'"
                           >
-                            {{ p.label }}
+                            <span :class="getPlaceLabelClass(p)">{{ p.label }}</span>
                           </button>
                         </div>
                       </div>
@@ -522,6 +606,21 @@ onMounted(() => {
                             <small>Disponible</small>
                           </div>
                         </div>
+
+                        <div class="legend mt-2 pt-2 border-top">
+                          <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="legend-color" style="background-color: var(--bs-primary); width: 20px; height: 20px;"></span>
+                            <small>STANDARD</small>
+                          </div>
+                          <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="legend-color" style="background-color: var(--bs-warning); width: 20px; height: 20px;"></span>
+                            <small>VIP</small>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="legend-color" style="background-color: var(--bs-info); width: 20px; height: 20px;"></span>
+                            <small>PMR</small>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -536,12 +635,20 @@ onMounted(() => {
 
                   <div v-else>
                     <div
-                      v-for="row in selectedByType"
-                      :key="row.typePlaceId + '|' + row.libelle"
+                      v-for="row in selectedByTypeAndCategorie"
+                      :key="String(row.typePlaceId) + '|' + String(row.categorieClientId)"
                       class="d-flex justify-content-between"
                     >
                       <span>
-                        {{ row.count }} {{ row.libelle }} tarif {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }} total {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }}
+                        {{ row.count }} {{ row.typeLibelle }} {{ row.categorieLibelle }} tarif
+                        {{ formatMoney(prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0) }}
+                        total
+                        {{
+                          formatMoney(
+                            row.count *
+                              (prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0),
+                          )
+                        }}
                       </span>
                     </div>
 
