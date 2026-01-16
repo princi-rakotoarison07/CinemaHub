@@ -15,6 +15,7 @@ const API_FILMS = `${API_BASE_URL}/api/films`
 const API_SALLES = `${API_BASE_URL}/api/salles`
 const API_TYPE_PLACES = `${API_BASE_URL}/api/type-places`
 const API_TARIFS = `${API_BASE_URL}/api/tarifs`
+const API_CONFIGURATION_TARIFS = `${API_BASE_URL}/api/configuration-tarifs`
 
 const loading = ref(false)
 const error = ref('')
@@ -26,6 +27,7 @@ const films = ref([])
 const salles = ref([])
 const typePlaces = ref([])
 const tarifs = ref([])
+const configurationTarifs = ref([])
 const places = ref([])
 const selectedPlaceIds = ref([])
 
@@ -155,6 +157,25 @@ const prixAdulteByTypePlaceId = computed(() => {
   return map
 })
 
+const configurationTarifByTarif2Id = computed(() => {
+  const map = new Map()
+  for (const cfg of configurationTarifs.value ?? []) {
+    if (cfg?.actif === false) continue
+    const tarif2Id = cfg?.tarif2?.id != null ? String(cfg.tarif2.id) : ''
+    if (!tarif2Id) continue
+    map.set(tarif2Id, cfg)
+  }
+  return map
+})
+
+const tarifById = computed(() => {
+  const map = new Map()
+  for (const t of tarifs.value ?? []) {
+    if (t?.id != null) map.set(String(t.id), t)
+  }
+  return map
+})
+
 const prixByTypePlaceAndCategorieId = computed(() => {
   const map = new Map()
   for (const t of tarifs.value ?? []) {
@@ -162,8 +183,30 @@ const prixByTypePlaceAndCategorieId = computed(() => {
     const typeId = t?.typePlace?.id != null ? String(t.typePlace.id) : ''
     const catId = t?.categorieClient?.id != null ? String(t.categorieClient.id) : ''
     if (!typeId || !catId) continue
-    if (t?.prix == null) continue
-    map.set(`${typeId}|${catId}`, Number(t.prix))
+
+    const tarifId = t?.id != null ? String(t.id) : ''
+    const basePrice = t?.prix != null ? Number(t.prix) : 0
+    if (!tarifId) {
+      map.set(`${typeId}|${catId}`, basePrice)
+      continue
+    }
+
+    const cfg = configurationTarifByTarif2Id.value.get(tarifId)
+    if (!cfg) {
+      map.set(`${typeId}|${catId}`, basePrice)
+      continue
+    }
+
+    const tarif1Id = cfg?.tarif1?.id != null ? String(cfg.tarif1.id) : ''
+    const pct = cfg?.pourcentage != null ? Number(cfg.pourcentage) : 0
+    const tarif1 = tarif1Id ? tarifById.value.get(tarif1Id) : null
+    const tarif1Price = tarif1?.prix != null ? Number(tarif1.prix) : NaN
+    if (!Number.isFinite(tarif1Price) || !Number.isFinite(pct)) {
+      map.set(`${typeId}|${catId}`, basePrice)
+      continue
+    }
+
+    map.set(`${typeId}|${catId}`, (tarif1Price * pct) / 100)
   }
   return map
 })
@@ -268,7 +311,7 @@ const loadRefs = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [cRes, sRes, catRes, fRes, saRes, tpRes, tRes] = await Promise.all([
+    const [cRes, sRes, catRes, fRes, saRes, tpRes, tRes, cfgRes] = await Promise.all([
       fetch(API_CLIENTS),
       fetch(API_SEANCES),
       fetch(API_CATEGORIES),
@@ -276,6 +319,7 @@ const loadRefs = async () => {
       fetch(API_SALLES),
       fetch(API_TYPE_PLACES),
       fetch(API_TARIFS),
+      fetch(API_CONFIGURATION_TARIFS),
     ])
     if (!cRes.ok) throw new Error(`Clients HTTP ${cRes.status}`)
     if (!sRes.ok) throw new Error(`Séances HTTP ${sRes.status}`)
@@ -284,6 +328,7 @@ const loadRefs = async () => {
     if (!saRes.ok) throw new Error(`Salles HTTP ${saRes.status}`)
     if (!tpRes.ok) throw new Error(`Type places HTTP ${tpRes.status}`)
     if (!tRes.ok) throw new Error(`Tarifs HTTP ${tRes.status}`)
+    if (!cfgRes.ok) throw new Error(`Configuration tarifs HTTP ${cfgRes.status}`)
 
     clients.value = await cRes.json()
     seances.value = await sRes.json()
@@ -292,6 +337,7 @@ const loadRefs = async () => {
     salles.value = await saRes.json()
     typePlaces.value = await tpRes.json()
     tarifs.value = await tRes.json()
+    configurationTarifs.value = await cfgRes.json()
   } catch (e) {
     error.value = e?.message ?? 'Erreur lors du chargement'
     toast.error(error.value)

@@ -9,6 +9,7 @@ import com.cinema.management.entity.Seance;
 import com.cinema.management.entity.Statut;
 import com.cinema.management.entity.Tarif;
 import com.cinema.management.entity.Ticket;
+import com.cinema.management.repository.ConfigurationTarifRepository;
 import com.cinema.management.repository.CategorieClientRepository;
 import com.cinema.management.repository.ClientRepository;
 import com.cinema.management.repository.DetailsReservationRepository;
@@ -19,6 +20,7 @@ import com.cinema.management.repository.TarifRepository;
 import com.cinema.management.repository.TicketRepository;
 import com.cinema.management.repository.SeanceRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ public class ReservationService {
   private final PlaceRepository placeRepository;
   private final CategorieClientRepository categorieClientRepository;
   private final TarifRepository tarifRepository;
+  private final ConfigurationTarifRepository configurationTarifRepository;
   private final StatutRepository statutRepository;
 
   public ReservationService(
@@ -51,6 +54,7 @@ public class ReservationService {
       PlaceRepository placeRepository,
       CategorieClientRepository categorieClientRepository,
       TarifRepository tarifRepository,
+      ConfigurationTarifRepository configurationTarifRepository,
       StatutRepository statutRepository) {
     this.reservationRepository = reservationRepository;
     this.ticketRepository = ticketRepository;
@@ -60,7 +64,25 @@ public class ReservationService {
     this.placeRepository = placeRepository;
     this.categorieClientRepository = categorieClientRepository;
     this.tarifRepository = tarifRepository;
+    this.configurationTarifRepository = configurationTarifRepository;
     this.statutRepository = statutRepository;
+  }
+
+  private BigDecimal getAppliedPrice(Tarif baseTarif) {
+    if (baseTarif == null || baseTarif.getId() == null) return BigDecimal.ZERO;
+
+    return configurationTarifRepository
+        .findFirstByTarif2IdAndActifTrue(baseTarif.getId())
+        .map(cfg -> {
+          BigDecimal basePrice = cfg.getTarif1() != null ? cfg.getTarif1().getPrix() : null;
+          if (basePrice == null) return baseTarif.getPrix();
+
+          BigDecimal pct = cfg.getPourcentage() != null ? cfg.getPourcentage() : BigDecimal.ZERO;
+          BigDecimal applied =
+              basePrice.multiply(pct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+          return applied;
+        })
+        .orElse(baseTarif.getPrix());
   }
 
   private Statut getStatutOrThrow(String code) {
@@ -134,11 +156,13 @@ public class ReservationService {
                   typePlaceId, categorie.getId())
               .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
 
+      BigDecimal appliedPrice = getAppliedPrice(tarif);
+
       Ticket ticket = new Ticket();
       ticket.setReservation(reservation);
       ticket.setPlace(place);
       ticket.setCategorieClient(categorie);
-      ticket.setPrix(tarif.getPrix());
+      ticket.setPrix(appliedPrice);
 
       tickets.add(ticket);
 
@@ -146,10 +170,10 @@ public class ReservationService {
       detail.setReservation(reservation);
       detail.setPlace(place);
       detail.setCategorieClient(categorie);
-      detail.setPrix(tarif.getPrix());
+      detail.setPrix(appliedPrice);
 
       details.add(detail);
-      total = total.add(tarif.getPrix());
+      total = total.add(appliedPrice);
     }
 
     ticketRepository.saveAll(tickets);

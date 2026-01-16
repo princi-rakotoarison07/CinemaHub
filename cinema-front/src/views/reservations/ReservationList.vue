@@ -40,6 +40,29 @@ const payReservation = async (id) => {
   }
 }
 
+const reservationDetailsSummary = (detailsList) => {
+  const list = Array.isArray(detailsList) ? detailsList : []
+  const map = new Map()
+
+  for (const it of list) {
+    const type = String(it?.place?.typePlaceLibelle ?? it?.place?.typePlaceId ?? 'Type').trim()
+    const cat = String(it?.categorieClient?.libelle ?? it?.categorieClient?.id ?? 'Catégorie').trim()
+    const key = `${type}||${cat}`
+    map.set(key, {
+      type,
+      categorie: cat,
+      count: (map.get(key)?.count ?? 0) + 1,
+    })
+  }
+
+  const out = Array.from(map.values())
+  out.sort((a, b) => {
+    if (a.type !== b.type) return a.type.localeCompare(b.type)
+    return a.categorie.localeCompare(b.categorie)
+  })
+  return out
+}
+
 const expandedReservationDetails = ref({})
 
 const isReservationDetailsExpanded = (reservationId) =>
@@ -350,27 +373,42 @@ onMounted(load)
                                         </div>
 
                                         <div v-else class="table-responsive">
-                                          <table class="table table-sm mb-0">
-                                            <thead>
-                                              <tr>
-                                                <th>Place</th>
-                                                <th>Type</th>
-                                                <th>Catégorie</th>
-                                                <th class="text-end">Prix</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              <tr
-                                                v-for="it in detailsByReservationId[String(d.id)]"
-                                                :key="String(d.id) + '|' + String(it.id)"
+                                          <div class="row g-3">
+                                            <div class="col-12 col-md-4">
+                                              <div class="fw-semibold mb-2">Résumé</div>
+                                              <div
+                                                v-for="s in reservationDetailsSummary(detailsByReservationId[String(d.id)])"
+                                                :key="String(d.id) + '|' + s.type + '|' + s.categorie"
+                                                class="small"
                                               >
-                                                <td>{{ it?.place?.label ?? it?.place?.id }}</td>
-                                                <td>{{ it?.place?.typePlaceLibelle ?? it?.place?.typePlaceId }}</td>
-                                                <td>{{ it?.categorieClient?.libelle ?? it?.categorieClient?.id }}</td>
-                                                <td class="text-end">{{ it?.prix }}</td>
-                                              </tr>
-                                            </tbody>
-                                          </table>
+                                                {{ s.type }} {{ s.categorie }} {{ s.count }}
+                                              </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-8">
+                                              <table class="table table-sm mb-0">
+                                                <thead>
+                                                  <tr>
+                                                    <th>Place</th>
+                                                    <th>Type</th>
+                                                    <th>Catégorie</th>
+                                                    <th class="text-end">Prix</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  <tr
+                                                    v-for="it in detailsByReservationId[String(d.id)]"
+                                                    :key="String(d.id) + '|' + String(it.id)"
+                                                  >
+                                                    <td>{{ it?.place?.label ?? it?.place?.id }}</td>
+                                                    <td>{{ it?.place?.typePlaceLibelle ?? it?.place?.typePlaceId }}</td>
+                                                    <td>{{ it?.categorieClient?.libelle ?? it?.categorieClient?.id }}</td>
+                                                    <td class="text-end">{{ it?.prix }}</td>
+                                                  </tr>
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
                                         </div>
                                       </div>
                                     </td>

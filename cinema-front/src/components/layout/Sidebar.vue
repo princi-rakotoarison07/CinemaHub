@@ -8,6 +8,7 @@ const isTestsRoute = computed(() => route.path.startsWith('/tests'))
 const isSallesRoute = computed(() => route.path.startsWith('/salles'))
 const isFilmsRoute = computed(() => route.path.startsWith('/films'))
 const isTarifsRoute = computed(() => route.path.startsWith('/tarifs'))
+const isConfigurationTarifsRoute = computed(() => route.path.startsWith('/configuration-tarifs'))
 const isPlacesRoute = computed(() => route.path.startsWith('/places'))
 const isTicketsRoute = computed(() => route.path.startsWith('/tickets'))
 
@@ -88,6 +89,40 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
           </li>
           <li>
             <RouterLink :class="[route.path === '/tarifs/new' ? 'active' : '']" to="/tarifs/new">
+              <i class="bi bi-circle"></i><span>Nouveau</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a
+          :class="['nav-link', isConfigurationTarifsRoute ? '' : 'collapsed']"
+          data-bs-target="#configuration-tarifs-nav"
+          data-bs-toggle="collapse"
+          href="#"
+        >
+          <i class="bi bi-sliders"></i><span>Configuration tarifs</span
+          ><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul
+          id="configuration-tarifs-nav"
+          :class="['nav-content', 'collapse', isConfigurationTarifsRoute ? 'show' : '']"
+          data-bs-parent="#sidebar-nav"
+        >
+          <li>
+            <RouterLink
+              :class="[route.path === '/configuration-tarifs/grille' ? 'active' : '']"
+              to="/configuration-tarifs/grille"
+            >
+              <i class="bi bi-circle"></i><span>Grille</span>
+            </RouterLink>
+          </li>
+          <li>
+            <RouterLink
+              :class="[route.path === '/configuration-tarifs/new' ? 'active' : '']"
+              to="/configuration-tarifs/new"
+            >
               <i class="bi bi-circle"></i><span>Nouveau</span>
             </RouterLink>
           </li>

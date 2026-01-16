@@ -114,7 +114,7 @@ CREATE TABLE reservation (
   id_seance INT NOT NULL REFERENCES seance(id),
   id_statut INT NOT NULL REFERENCES statut(id),
   nb_place INT NOT NULL DEFAULT 0 CHECK (nb_place >= 0),
-  montant_total NUMERIC(8,2) NOT NULL DEFAULT 0,
+  montant_total NUMERIC(12,2) NOT NULL DEFAULT 0,
   date_reservation TIMESTAMPTZ DEFAULT now(),
   date_expiration TIMESTAMPTZ
 );
@@ -127,7 +127,7 @@ CREATE TABLE details_reservation (
   id_reservation INT NOT NULL REFERENCES reservation(id) ON DELETE CASCADE,
   id_place INT NOT NULL REFERENCES place(id),
   id_categorie_client INT NOT NULL REFERENCES categorie_client(id),
-  prix NUMERIC(6,2) NOT NULL,
+  prix NUMERIC(12,2) NOT NULL,
   cree_le TIMESTAMPTZ DEFAULT now(),
   UNIQUE (id_reservation, id_place)
 );
@@ -143,7 +143,7 @@ CREATE TABLE ticket (
   id_reservation INT NOT NULL REFERENCES reservation(id) ON DELETE CASCADE,
   id_place INT NOT NULL REFERENCES place(id),
   id_categorie_client INT NOT NULL REFERENCES categorie_client(id),
-  prix NUMERIC(6,2) NOT NULL,
+  prix NUMERIC(12,2) NOT NULL,
   cree_le TIMESTAMPTZ DEFAULT now(),
   UNIQUE (id_reservation, id_place)
 );
@@ -158,11 +158,20 @@ CREATE TABLE tarif (
   id SERIAL PRIMARY KEY,
   id_type_place INT NOT NULL REFERENCES type_place(id),
   id_categorie_client INT NOT NULL REFERENCES categorie_client(id),
-  prix NUMERIC(6,2) NOT NULL,
+  prix NUMERIC(12,2) NOT NULL,
   actif BOOLEAN DEFAULT true,
   date_debut DATE,
   date_fin DATE,
   UNIQUE (id_type_place, id_categorie_client, date_debut)
+);
+
+CREATE TABLE configuration_tarif (
+  id SERIAL PRIMARY KEY,
+  id_tarif1 INT NOT NULL REFERENCES tarif(id) ON DELETE CASCADE,
+  id_tarif2 INT NOT NULL REFERENCES tarif(id) ON DELETE CASCADE,
+  pourcentage NUMERIC(5,2) NOT NULL CHECK (pourcentage >= 0 AND pourcentage <= 100),
+  actif BOOLEAN DEFAULT true,
+  UNIQUE (id_tarif2)
 );
 
 -- ------------------------------
@@ -212,7 +221,7 @@ INSERT INTO salle (nom, capacite) VALUES
   ('Salle 2', 200),
   ('Salle 3', 100),
   ('Salle 4', 10),
-  ('Salle 5', 100);
+  ('Salle 5 -ALEA', 100);
 
 -- Insertion des places pour Salle 1
 DO $$
@@ -298,7 +307,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- Insertion des places pour Salle 5 (100 places : 10 VIP, 20 PMR, 70 STANDARD)
+-- Insertion des places pour Salle 5 -ALEA (100 places : 10 VIP, 20 PMR, 70 STANDARD)
 DO $$
 DECLARE
   num INT;
@@ -349,6 +358,11 @@ INSERT INTO tarif (id, id_type_place, id_categorie_client, prix, actif) VALUES
   (2, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 15000, true);
 
 SELECT setval('tarif_id_seq', (SELECT COALESCE(MAX(id), 1) FROM tarif));
+
+INSERT INTO configuration_tarif (id, id_tarif1, id_tarif2, pourcentage, actif) VALUES
+  (1, 1, 2, 50, true);
+
+SELECT setval('configuration_tarif_id_seq', (SELECT COALESCE(MAX(id), 1) FROM configuration_tarif));
 
 -- Insertion d'un client exemple
 INSERT INTO client (nom, prenom, email, telephone) VALUES

@@ -13,6 +13,8 @@ import SeanceForm from '../views/seances/SeanceForm.vue'
 import TarifList from '../views/tarifs/TarifList.vue'
 import TarifForm from '../views/tarifs/TarifForm.vue'
 import TarifGrid from '../views/tarifs/TarifGrid.vue'
+import ConfigurationTarifForm from '../views/configurationTarifs/ConfigurationTarifForm.vue'
+import ConfigurationTarifGrid from '../views/configurationTarifs/ConfigurationTarifGrid.vue'
 import PlaceList from '../views/places/PlaceList.vue'
 import PlaceForm from '../views/places/PlaceForm.vue'
 import PlaceGestion from '../views/places/PlaceGestion.vue'
@@ -102,6 +104,16 @@ const router = createRouter({
           path: 'tarifs/grille',
           name: 'tarifs-grille',
           component: TarifGrid,
+        },
+        {
+          path: 'configuration-tarifs/new',
+          name: 'configuration-tarifs-new',
+          component: ConfigurationTarifForm,
+        },
+        {
+          path: 'configuration-tarifs/grille',
+          name: 'configuration-tarifs-grille',
+          component: ConfigurationTarifGrid,
         },
         {
           path: 'places',
