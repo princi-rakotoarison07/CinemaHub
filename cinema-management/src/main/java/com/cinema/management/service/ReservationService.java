@@ -107,6 +107,36 @@ public class ReservationService {
     if ("ANNULEE".equals(currentCode)) {
       throw new IllegalStateException("Réservation annulée");
     }
+
+    List<DetailsReservation> details = detailsReservationRepository.findByReservationId(reservationId);
+    if (details == null || details.isEmpty()) {
+      throw new IllegalStateException("Aucun détail de réservation");
+    }
+
+    List<Ticket> ticketsToCreate = new ArrayList<>();
+    for (DetailsReservation d : details) {
+      if (d.getPlace() == null || d.getPlace().getId() == null) continue;
+      if (d.getCategorieClient() == null || d.getCategorieClient().getId() == null) continue;
+
+      boolean alreadyTicketed =
+          ticketRepository.existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
+              d.getPlace().getId(),
+              reservation.getSeance() != null ? reservation.getSeance().getId() : null,
+              List.of("PAYEE"));
+      if (alreadyTicketed) continue;
+
+      Ticket t = new Ticket();
+      t.setReservation(reservation);
+      t.setPlace(d.getPlace());
+      t.setCategorieClient(d.getCategorieClient());
+      t.setPrix(d.getPrix());
+      ticketsToCreate.add(t);
+    }
+
+    if (!ticketsToCreate.isEmpty()) {
+      ticketRepository.saveAll(ticketsToCreate);
+    }
+
     reservation.setStatut(getStatutOrThrow("PAYEE"));
     reservation.setDateExpiration(null);
     return reservationRepository.save(reservation);
@@ -134,7 +164,6 @@ public class ReservationService {
     reservation = reservationRepository.save(reservation);
 
     BigDecimal total = BigDecimal.ZERO;
-    List<Ticket> tickets = new ArrayList<>();
     List<DetailsReservation> details = new ArrayList<>();
 
     for (Item item : items) {
@@ -143,7 +172,7 @@ public class ReservationService {
           categorieClientRepository.findById(item.categorieClientId()).orElseThrow();
 
       boolean occupee =
-          ticketRepository.existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
+          detailsReservationRepository.existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
               place.getId(), seance.getId(), STATUTS_OCCUPES);
       if (occupee) {
         throw new IllegalStateException("Place déjà réservée pour cette séance");
@@ -158,14 +187,6 @@ public class ReservationService {
 
       BigDecimal appliedPrice = getAppliedPrice(tarif);
 
-      Ticket ticket = new Ticket();
-      ticket.setReservation(reservation);
-      ticket.setPlace(place);
-      ticket.setCategorieClient(categorie);
-      ticket.setPrix(appliedPrice);
-
-      tickets.add(ticket);
-
       DetailsReservation detail = new DetailsReservation();
       detail.setReservation(reservation);
       detail.setPlace(place);
@@ -176,7 +197,6 @@ public class ReservationService {
       total = total.add(appliedPrice);
     }
 
-    ticketRepository.saveAll(tickets);
     detailsReservationRepository.saveAll(details);
 
     reservation.setMontantTotal(total);

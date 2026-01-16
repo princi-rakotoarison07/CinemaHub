@@ -14,3 +14,6 @@ Sujet 2:
 Une salle possède des places premium (types de place) coute 50000 ar et une place standar 20000 ar 
 Donner la valeur maximal qu'une salle peut generer pour une diffusion de film
 
+
+ATTENTION:::
+on marque les places comme occupées via les tickets existants / seance places endpoint
