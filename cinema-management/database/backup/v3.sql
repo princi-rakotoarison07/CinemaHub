@@ -282,15 +282,15 @@ INSERT INTO seance (id_film, id_salle, date_heure, langue, version) VALUES
 INSERT INTO tarif (id, id_type_place, id_categorie_client, prix, actif) VALUES
   (3, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 20000, true),
   (4, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 20000, true),
-  (1, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 30000, true),
-  (5, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 50000, true),
-  (6, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 10000, true),
+  (1, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 20000, true),
+  (5, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 100000, true),
+  (6, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 100000, true),
   (7, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 100000, true),
-  (8, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 45000, true),
-  (9, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 40000, true),
-  (10, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 30000, true),
+  (8, (SELECT id FROM type_place WHERE libelle = 'VIP'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 100000, true),
+  (9, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ADULTE'), 50000, true),
+  (10, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 50000, true),
   (11, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'SENIOR'), 50000, true),
-  (12, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 30000, true),
+  (12, (SELECT id FROM type_place WHERE libelle = 'PMR'), (SELECT id FROM categorie_client WHERE libelle = 'ETUDIANT'), 50000, true),
   (2, (SELECT id FROM type_place WHERE libelle = 'STANDARD'), (SELECT id FROM categorie_client WHERE libelle = 'ENFANT'), 15000, true);
 
 SELECT setval('tarif_id_seq', (SELECT COALESCE(MAX(id), 1) FROM tarif));
