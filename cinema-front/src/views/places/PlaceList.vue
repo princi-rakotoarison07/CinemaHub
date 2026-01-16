@@ -1,21 +1,66 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useToast } from '../../composables/useToast'
 import { API_BASE_URL } from '../../config/api'
 
-const API_BASE = `${API_BASE_URL}/api/places`
+const API_PLACES = `${API_BASE_URL}/api/places`
+const API_SALLES = `${API_BASE_URL}/api/salles`
+const API_TYPE_PLACES = `${API_BASE_URL}/api/type-places`
 
 const toast = useToast()
 
 const places = ref([])
+const salles = ref([])
+const typePlaces = ref([])
 const loading = ref(false)
 const error = ref('')
+
+const salleById = computed(() => {
+  const m = new Map()
+  for (const s of salles.value ?? []) {
+    if (s?.id != null) m.set(String(s.id), s)
+  }
+  return m
+})
+
+const typePlaceById = computed(() => {
+  const m = new Map()
+  for (const tp of typePlaces.value ?? []) {
+    if (tp?.id != null) m.set(String(tp.id), tp)
+  }
+  return m
+})
+
+const getSalleLabel = (salle) => {
+  if (!salle) return ''
+  if (salle.nom) return salle.nom
+  const id = salle.id
+  const s = id != null ? salleById.value.get(String(id)) : null
+  return s?.nom ?? (id != null ? String(id) : '')
+}
+
+const getTypePlaceLabel = (typePlace) => {
+  if (!typePlace) return ''
+  if (typePlace.libelle) return typePlace.libelle
+  const id = typePlace.id
+  const tp = id != null ? typePlaceById.value.get(String(id)) : null
+  return tp?.libelle ?? (id != null ? String(id) : '')
+}
+
+const loadRefs = async () => {
+  const [sRes, tpRes] = await Promise.all([fetch(API_SALLES), fetch(API_TYPE_PLACES)])
+  if (!sRes.ok) throw new Error(`Salles HTTP ${sRes.status}`)
+  if (!tpRes.ok) throw new Error(`Type places HTTP ${tpRes.status}`)
+  salles.value = await sRes.json()
+  typePlaces.value = await tpRes.json()
+}
 
 const load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(API_BASE)
+    await loadRefs()
+    const res = await fetch(API_PLACES)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     places.value = await res.json()
   } catch (e) {
@@ -52,23 +97,21 @@ onMounted(load)
               <table class="table table-striped">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Salle (id)</th>
+                    <th>Salle</th>
                     <th>Rangée</th>
                     <th>Numéro</th>
-                    <th>Type place (id)</th>
+                    <th>Type place</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="p in places" :key="p.id">
-                    <td>{{ p.id }}</td>
-                    <td>{{ p.salle?.id }}</td>
+                    <td>{{ getSalleLabel(p.salle) }}</td>
                     <td>{{ p.rangee }}</td>
                     <td>{{ p.numero }}</td>
-                    <td>{{ p.typePlace?.id }}</td>
+                    <td>{{ getTypePlaceLabel(p.typePlace) }}</td>
                   </tr>
                   <tr v-if="places.length === 0">
-                    <td colspan="5" class="text-center text-muted">Aucun élément</td>
+                    <td colspan="4" class="text-center text-muted">Aucun élément</td>
                   </tr>
                 </tbody>
               </table>

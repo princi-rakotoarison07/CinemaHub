@@ -46,13 +46,15 @@ const submit = async () => {
   loading.value = true
   error.value = ''
   try {
+    if (!form.value.filmId) throw new Error('Film obligatoire')
+    if (!form.value.salleId) throw new Error('Salle obligatoire')
     if (!form.value.dateHeureLocal) throw new Error('Date/heure obligatoire')
 
     const iso = new Date(form.value.dateHeureLocal).toISOString()
 
     const payload = {
-      filmId: Number(form.value.filmId),
-      salleId: Number(form.value.salleId),
+      film: { id: Number(form.value.filmId) },
+      salle: { id: Number(form.value.salleId) },
       dateHeure: iso,
       langue: form.value.langue,
       version: form.value.version,

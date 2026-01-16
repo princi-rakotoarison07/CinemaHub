@@ -2,14 +2,17 @@ package com.cinema.management.service;
 
 import com.cinema.management.entity.CategorieClient;
 import com.cinema.management.entity.Client;
+import com.cinema.management.entity.DetailsReservation;
 import com.cinema.management.entity.Place;
 import com.cinema.management.entity.Reservation;
 import com.cinema.management.entity.Seance;
 import com.cinema.management.entity.Statut;
 import com.cinema.management.entity.Tarif;
 import com.cinema.management.entity.Ticket;
+import com.cinema.management.repository.ConfigurationTarifRepository;
 import com.cinema.management.repository.CategorieClientRepository;
 import com.cinema.management.repository.ClientRepository;
+import com.cinema.management.repository.DetailsReservationRepository;
 import com.cinema.management.repository.PlaceRepository;
 import com.cinema.management.repository.ReservationRepository;
 import com.cinema.management.repository.StatutRepository;
@@ -17,6 +20,7 @@ import com.cinema.management.repository.TarifRepository;
 import com.cinema.management.repository.TicketRepository;
 import com.cinema.management.repository.SeanceRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -32,30 +36,53 @@ public class ReservationService {
 
   private final ReservationRepository reservationRepository;
   private final TicketRepository ticketRepository;
+  private final DetailsReservationRepository detailsReservationRepository;
   private final ClientRepository clientRepository;
   private final SeanceRepository seanceRepository;
   private final PlaceRepository placeRepository;
   private final CategorieClientRepository categorieClientRepository;
   private final TarifRepository tarifRepository;
+  private final ConfigurationTarifRepository configurationTarifRepository;
   private final StatutRepository statutRepository;
 
   public ReservationService(
       ReservationRepository reservationRepository,
       TicketRepository ticketRepository,
+      DetailsReservationRepository detailsReservationRepository,
       ClientRepository clientRepository,
       SeanceRepository seanceRepository,
       PlaceRepository placeRepository,
       CategorieClientRepository categorieClientRepository,
       TarifRepository tarifRepository,
+      ConfigurationTarifRepository configurationTarifRepository,
       StatutRepository statutRepository) {
     this.reservationRepository = reservationRepository;
     this.ticketRepository = ticketRepository;
+    this.detailsReservationRepository = detailsReservationRepository;
     this.clientRepository = clientRepository;
     this.seanceRepository = seanceRepository;
     this.placeRepository = placeRepository;
     this.categorieClientRepository = categorieClientRepository;
     this.tarifRepository = tarifRepository;
+    this.configurationTarifRepository = configurationTarifRepository;
     this.statutRepository = statutRepository;
+  }
+
+  private BigDecimal getAppliedPrice(Tarif baseTarif) {
+    if (baseTarif == null || baseTarif.getId() == null) return BigDecimal.ZERO;
+
+    return configurationTarifRepository
+        .findFirstByTarif2IdAndActifTrue(baseTarif.getId())
+        .map(cfg -> {
+          BigDecimal basePrice = cfg.getTarif1() != null ? cfg.getTarif1().getPrix() : null;
+          if (basePrice == null) return baseTarif.getPrix();
+
+          BigDecimal pct = cfg.getPourcentage() != null ? cfg.getPourcentage() : BigDecimal.ZERO;
+          BigDecimal applied =
+              basePrice.multiply(pct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+          return applied;
+        })
+        .orElse(baseTarif.getPrix());
   }
 
   private Statut getStatutOrThrow(String code) {
@@ -91,6 +118,8 @@ public class ReservationService {
       throw new IllegalArgumentException("Aucune place sélectionnée");
     }
 
+    int nbPlace = items.size();
+
     Client client = clientRepository.findById(clientId).orElseThrow();
     Seance seance = seanceRepository.findById(seanceId).orElseThrow();
 
@@ -98,6 +127,7 @@ public class ReservationService {
     reservation.setClient(client);
     reservation.setSeance(seance);
     reservation.setStatut(getStatutOrThrow("EN_ATTENTE"));
+    reservation.setNbPlace(nbPlace);
     reservation.setMontantTotal(BigDecimal.ZERO);
     reservation.setDateExpiration(Instant.now().plus(15, ChronoUnit.MINUTES));
 
@@ -105,6 +135,7 @@ public class ReservationService {
 
     BigDecimal total = BigDecimal.ZERO;
     List<Ticket> tickets = new ArrayList<>();
+    List<DetailsReservation> details = new ArrayList<>();
 
     for (Item item : items) {
       Place place = placeRepository.findById(item.placeId()).orElseThrow();
@@ -125,17 +156,28 @@ public class ReservationService {
                   typePlaceId, categorie.getId())
               .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
 
+      BigDecimal appliedPrice = getAppliedPrice(tarif);
+
       Ticket ticket = new Ticket();
       ticket.setReservation(reservation);
       ticket.setPlace(place);
       ticket.setCategorieClient(categorie);
-      ticket.setPrix(tarif.getPrix());
+      ticket.setPrix(appliedPrice);
 
       tickets.add(ticket);
-      total = total.add(tarif.getPrix());
+
+      DetailsReservation detail = new DetailsReservation();
+      detail.setReservation(reservation);
+      detail.setPlace(place);
+      detail.setCategorieClient(categorie);
+      detail.setPrix(appliedPrice);
+
+      details.add(detail);
+      total = total.add(appliedPrice);
     }
 
     ticketRepository.saveAll(tickets);
+    detailsReservationRepository.saveAll(details);
 
     reservation.setMontantTotal(total);
     return reservationRepository.save(reservation);

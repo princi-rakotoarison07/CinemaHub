@@ -62,6 +62,7 @@ public class ReservationController {
         clientId != null ? new ClientRef(clientId) : null,
         seanceId != null ? new SeanceRef(seanceId) : null,
         statutCode,
+        r.getNbPlace(),
         r.getMontantTotal(),
         r.getDateReservation(),
         r.getDateExpiration());
@@ -76,6 +77,7 @@ public class ReservationController {
       ClientRef client,
       SeanceRef seance,
       String statut,
+      Integer nbPlace,
       java.math.BigDecimal montantTotal,
       java.time.Instant dateReservation,
       java.time.Instant dateExpiration) {}

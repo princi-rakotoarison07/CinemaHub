@@ -113,6 +113,7 @@ CREATE TABLE reservation (
   id_client INT NOT NULL REFERENCES client(id),
   id_seance INT NOT NULL REFERENCES seance(id),
   id_statut INT NOT NULL REFERENCES statut(id),
+  nb_place INT NOT NULL DEFAULT 0 CHECK (nb_place >= 0),
   montant_total NUMERIC(8,2) NOT NULL DEFAULT 0,
   date_reservation TIMESTAMPTZ DEFAULT now(),
   date_expiration TIMESTAMPTZ
@@ -194,9 +195,9 @@ INSERT INTO film_genre (id_film, id_genre) VALUES
 
 -- Insertion des salles
 INSERT INTO salle (nom, capacite) VALUES
-  ('Salle 1', 150),
-  ('Salle 2', 200),
-  ('Salle 3', 100);
+  ('Salle 1', 50),
+  ('Salle 2', 55),
+  ('Salle 3', 60);
 
 -- Insertion des places pour Salle 1
 DO $$
@@ -223,7 +224,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- Insertion des places pour Salle 2 (exemple simplifié : 200 places standard)
+-- Insertion des places pour Salle 2 (exemple simplifié : 55 places standard)
 DO $$
 DECLARE
   rangee_letter TEXT;
@@ -232,16 +233,16 @@ DECLARE
 BEGIN
   type_standard_id := (SELECT id FROM type_place WHERE libelle = 'STANDARD');
   
-  FOREACH rangee_letter IN ARRAY ARRAY['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P']
+  FOREACH rangee_letter IN ARRAY ARRAY['A','B','C','D','E','F','G','H','I','J','K']
   LOOP
-    FOR num IN 1..13 LOOP
+    FOR num IN 1..5 LOOP
       INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
         (2, rangee_letter, num, type_standard_id);
     END LOOP;
   END LOOP;
 END $$;
 
--- Insertion des places pour Salle 3 (100 places)
+-- Insertion des places pour Salle 3 (60 places)
 DO $$
 DECLARE
   rangee_letter TEXT;
@@ -250,9 +251,9 @@ DECLARE
 BEGIN
   type_standard_id := (SELECT id FROM type_place WHERE libelle = 'STANDARD');
   
-  FOREACH rangee_letter IN ARRAY ARRAY['A','B','C','D','E','F','G','H','I','J']
+  FOREACH rangee_letter IN ARRAY ARRAY['A','B','C','D','E','F','G','H','I','J','K','L']
   LOOP
-    FOR num IN 1..10 LOOP
+    FOR num IN 1..5 LOOP
       INSERT INTO place (id_salle, rangee, numero, id_type_place) VALUES
         (3, rangee_letter, num, type_standard_id);
     END LOOP;
@@ -290,8 +291,8 @@ INSERT INTO client (nom, prenom, email, telephone) VALUES
   ('Princi', 'Zo', 'princi@email.com', '0601020304');
 
 -- Création d'une réservation exemple pour Avatar le 10 janvier à 10h en Salle 1
-INSERT INTO reservation (id_client, id_seance, id_statut, montant_total, date_expiration) VALUES
-  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 19.00, now() + interval '15 minutes');
+INSERT INTO reservation (id_client, id_seance, id_statut, nb_place, montant_total, date_expiration) VALUES
+  (1, 1, (SELECT id FROM statut WHERE code = 'EN_ATTENTE'), 2, 19.00, now() + interval '15 minutes');
 
 -- Ajout de tickets (2 places adultes standard)
 INSERT INTO ticket (id_reservation, id_place, id_categorie_client, prix) VALUES
