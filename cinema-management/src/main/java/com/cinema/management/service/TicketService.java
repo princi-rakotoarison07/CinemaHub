@@ -23,6 +23,10 @@ public class TicketService {
     return ticketRepository.findById(id);
   }
 
+  public List<Ticket> findByReservationId(Long reservationId) {
+    return ticketRepository.findByReservationId(reservationId);
+  }
+
   public Ticket create(Ticket ticket) {
     return ticketRepository.save(ticket);
   }

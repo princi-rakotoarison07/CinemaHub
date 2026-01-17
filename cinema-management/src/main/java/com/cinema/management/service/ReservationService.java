@@ -113,7 +113,12 @@ public class ReservationService {
       throw new IllegalStateException("Aucun détail de réservation");
     }
 
+    if (reservation.getSeance() == null || reservation.getSeance().getId() == null) {
+      throw new IllegalStateException("Séance introuvable pour la réservation");
+    }
+
     List<Ticket> ticketsToCreate = new ArrayList<>();
+    BigDecimal total = BigDecimal.ZERO;
     for (DetailsReservation d : details) {
       if (d.getPlace() == null || d.getPlace().getId() == null) continue;
       if (d.getCategorieClient() == null || d.getCategorieClient().getId() == null) continue;
@@ -125,12 +130,30 @@ public class ReservationService {
               List.of("PAYEE"));
       if (alreadyTicketed) continue;
 
+      Long typePlaceId =
+          d.getPlace() != null && d.getPlace().getTypePlace() != null
+              ? d.getPlace().getTypePlace().getId()
+              : null;
+      if (typePlaceId == null) {
+        throw new IllegalStateException("Type de place introuvable");
+      }
+
+      Tarif tarif =
+          tarifRepository
+              .findFirstByTypePlaceIdAndCategorieClientIdAndActifTrueOrderByDateDebutDesc(
+                  typePlaceId, d.getCategorieClient().getId())
+              .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
+
+      BigDecimal appliedPrice = getAppliedPrice(tarif);
+
       Ticket t = new Ticket();
       t.setReservation(reservation);
       t.setPlace(d.getPlace());
       t.setCategorieClient(d.getCategorieClient());
-      t.setPrix(d.getPrix());
+      t.setPrix(appliedPrice);
       ticketsToCreate.add(t);
+
+      total = total.add(appliedPrice);
     }
 
     if (!ticketsToCreate.isEmpty()) {
@@ -139,7 +162,51 @@ public class ReservationService {
 
     reservation.setStatut(getStatutOrThrow("PAYEE"));
     reservation.setDateExpiration(null);
+    reservation.setMontantTotal(total);
     return reservationRepository.save(reservation);
+  }
+
+  public PayPreview previewPay(Long reservationId) {
+    Reservation reservation = reservationRepository.findById(reservationId).orElseThrow();
+    String currentCode =
+        reservation.getStatut() != null ? reservation.getStatut().getCode() : null;
+    if ("ANNULEE".equals(currentCode)) {
+      throw new IllegalStateException("Réservation annulée");
+    }
+
+    List<DetailsReservation> details = detailsReservationRepository.findByReservationId(reservationId);
+    if (details == null || details.isEmpty()) {
+      throw new IllegalStateException("Aucun détail de réservation");
+    }
+
+    BigDecimal total = BigDecimal.ZERO;
+    List<PayPreviewLine> lines = new ArrayList<>();
+
+    for (DetailsReservation d : details) {
+      if (d.getPlace() == null || d.getPlace().getId() == null) continue;
+      if (d.getCategorieClient() == null || d.getCategorieClient().getId() == null) continue;
+
+      Long typePlaceId =
+          d.getPlace() != null && d.getPlace().getTypePlace() != null
+              ? d.getPlace().getTypePlace().getId()
+              : null;
+      if (typePlaceId == null) {
+        throw new IllegalStateException("Type de place introuvable");
+      }
+
+      Tarif tarif =
+          tarifRepository
+              .findFirstByTypePlaceIdAndCategorieClientIdAndActifTrueOrderByDateDebutDesc(
+                  typePlaceId, d.getCategorieClient().getId())
+              .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
+
+      BigDecimal appliedPrice = getAppliedPrice(tarif);
+      total = total.add(appliedPrice);
+
+      lines.add(new PayPreviewLine(d.getPlace(), d.getCategorieClient(), appliedPrice));
+    }
+
+    return new PayPreview(reservationId, total, lines);
   }
 
   @Transactional
@@ -163,7 +230,6 @@ public class ReservationService {
 
     reservation = reservationRepository.save(reservation);
 
-    BigDecimal total = BigDecimal.ZERO;
     List<DetailsReservation> details = new ArrayList<>();
 
     for (Item item : items) {
@@ -179,27 +245,22 @@ public class ReservationService {
       }
 
       Long typePlaceId = place.getTypePlace().getId();
-      Tarif tarif =
-          tarifRepository
-              .findFirstByTypePlaceIdAndCategorieClientIdAndActifTrueOrderByDateDebutDesc(
-                  typePlaceId, categorie.getId())
-              .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
-
-      BigDecimal appliedPrice = getAppliedPrice(tarif);
+      tarifRepository
+          .findFirstByTypePlaceIdAndCategorieClientIdAndActifTrueOrderByDateDebutDesc(
+              typePlaceId, categorie.getId())
+          .orElseThrow(() -> new IllegalStateException("Tarif introuvable"));
 
       DetailsReservation detail = new DetailsReservation();
       detail.setReservation(reservation);
       detail.setPlace(place);
       detail.setCategorieClient(categorie);
-      detail.setPrix(appliedPrice);
 
       details.add(detail);
-      total = total.add(appliedPrice);
     }
 
     detailsReservationRepository.saveAll(details);
 
-    reservation.setMontantTotal(total);
+    reservation.setMontantTotal(BigDecimal.ZERO);
     return reservationRepository.save(reservation);
   }
 
@@ -208,4 +269,8 @@ public class ReservationService {
   }
 
   public record Item(Long placeId, Long categorieClientId) {}
+
+  public record PayPreview(Long reservationId, BigDecimal total, List<PayPreviewLine> lines) {}
+
+  public record PayPreviewLine(Place place, CategorieClient categorieClient, BigDecimal prix) {}
 }
