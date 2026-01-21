@@ -403,6 +403,14 @@ onMounted(load)
                               <i class="bi bi-pencil-square me-2 text-primary"></i> Modification
                             </RouterLink>
                           </li>
+                          <li>
+                            <RouterLink
+                              :to="'/reservations/' + r.id + '/simulation'"
+                              class="dropdown-item py-2"
+                            >
+                              <i class="bi bi-calculator me-2 text-info"></i> Simulation de prix
+                            </RouterLink>
+                          </li>
                         </ul>
                       </div>
                     </td>

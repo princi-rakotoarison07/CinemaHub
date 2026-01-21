@@ -26,6 +26,7 @@ import ClientForm from '../views/clients/ClientForm.vue'
 import ReservationList from '../views/reservations/ReservationList.vue'
 import ReservationForm from '../views/reservations/ReservationForm.vue'
 import ReservationEdit from '../views/reservations/ReservationEdit.vue'
+import ReservationSimulation from '../views/reservations/ReservationSimulation.vue'
 
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
@@ -170,6 +171,12 @@ const router = createRouter({
           path: 'reservations/:id/edit',
           name: 'reservations-edit',
           component: ReservationEdit,
+          props: true,
+        },
+        {
+          path: 'reservations/:id/simulation',
+          name: 'reservations-simulation',
+          component: ReservationSimulation,
           props: true,
         },
       ],
