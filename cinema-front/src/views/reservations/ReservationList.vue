@@ -8,7 +8,7 @@ const API_CLIENTS = `${API_BASE_URL}/api/clients`
 const API_SEANCES = `${API_BASE_URL}/api/seances`
 const API_FILMS = `${API_BASE_URL}/api/films`
 const API_SALLES = `${API_BASE_URL}/api/salles`
-const API_DETAILS_RESERVATION = `${API_BASE_URL}/api/details-reservations`
+const API_TICKETS = `${API_BASE_URL}/api/tickets`
 
 const toast = useToast()
 
@@ -23,17 +23,100 @@ const loadingDetailsByReservationId = ref({})
 const loading = ref(false)
 const error = ref('')
 
+const payModalOpen = ref(false)
+const payModalReservationId = ref(null)
+const payPreviewLoading = ref(false)
+const payPreviewError = ref('')
+const payPreview = ref(null)
+
+const payPreviewGroupedLines = computed(() => {
+  const raw = payPreview.value?.lines
+  const list = Array.isArray(raw) ? raw : []
+  const map = new Map()
+
+  for (const l of list) {
+    const type = String(l?.place?.typePlaceLibelle ?? l?.place?.typePlaceId ?? 'Type').trim()
+    const cat = String(l?.categorieClient?.libelle ?? l?.categorieClient?.id ?? 'Catégorie').trim()
+    const unit = Number.parseFloat(String(l?.prix ?? 0)) || 0
+    const key = `${type}||${cat}||${unit}`
+
+    if (!map.has(key)) {
+      map.set(key, {
+        type,
+        categorie: cat,
+        count: 0,
+        unitPrice: unit,
+        totalPrice: 0,
+      })
+    }
+
+    const g = map.get(key)
+    g.count += 1
+    g.totalPrice += unit
+  }
+
+  const out = Array.from(map.values())
+  out.sort((a, b) => {
+    if (a.type !== b.type) return a.type.localeCompare(b.type)
+    if (a.categorie !== b.categorie) return a.categorie.localeCompare(b.categorie)
+    return a.unitPrice - b.unitPrice
+  })
+  return out
+})
+
+const payPreviewTotalCount = computed(() => {
+  return payPreviewGroupedLines.value.reduce((acc, x) => acc + (Number(x.count) || 0), 0)
+})
+
+const payPreviewTotalAmount = computed(() => {
+  return payPreviewGroupedLines.value.reduce((acc, x) => acc + (Number(x.totalPrice) || 0), 0)
+})
+
 const getClientLabel = (clientId) => {
   const c = clients.value.find((x) => String(x.id) === String(clientId))
   if (!c) return clientId ? `Client ${clientId}` : ''
   return `${c.nom ?? ''} ${c.prenom ?? ''}`.trim() || `Client ${clientId}`
 }
 
-const payReservation = async (id) => {
+const closePayModal = () => {
+  payModalOpen.value = false
+  payModalReservationId.value = null
+  payPreviewLoading.value = false
+  payPreviewError.value = ''
+  payPreview.value = null
+}
+
+const openPayModal = async (id) => {
+  const reservationId = String(id ?? '')
+  if (!reservationId) return
+
+  payModalReservationId.value = reservationId
+  payModalOpen.value = true
+  payPreviewLoading.value = true
+  payPreviewError.value = ''
+  payPreview.value = null
+
   try {
-    const res = await fetch(`${API_BASE}/${id}/pay`, { method: 'PUT' })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const res = await fetch(`${API_BASE}/${reservationId}/pay-preview`)
+    if (!res.ok) throw new Error(`Preview paiement HTTP ${res.status}`)
+    payPreview.value = await res.json()
+  } catch (e) {
+    payPreviewError.value = e?.message ?? 'Erreur preview paiement'
+  } finally {
+    payPreviewLoading.value = false
+  }
+}
+
+const confirmPayReservation = async () => {
+  const reservationId = String(payModalReservationId.value ?? '')
+  if (!reservationId) return
+  if (payPreviewLoading.value) return
+
+  try {
+    const res = await fetch(`${API_BASE}/${reservationId}/pay`, { method: 'PUT' })
+    if (!res.ok) throw new Error(`Paiement HTTP ${res.status}`)
     toast.success('Payée')
+    closePayModal()
     await load()
   } catch (e) {
     toast.error(e?.message ?? 'Erreur paiement')
@@ -88,15 +171,15 @@ const toggleReservationDetails = async (reservationId) => {
   }
 
   try {
-    const res = await fetch(`${API_DETAILS_RESERVATION}?reservationId=${encodeURIComponent(key)}`)
-    if (!res.ok) throw new Error(`Détails réservation HTTP ${res.status}`)
+    const res = await fetch(`${API_TICKETS}?reservationId=${encodeURIComponent(key)}`)
+    if (!res.ok) throw new Error(`Tickets HTTP ${res.status}`)
     const list = await res.json()
     detailsByReservationId.value = {
       ...detailsByReservationId.value,
       [key]: Array.isArray(list) ? list : [],
     }
   } catch (e) {
-    toast.error(e?.message ?? 'Erreur lors du chargement des détails')
+    toast.error(e?.message ?? 'Erreur lors du chargement des tickets')
   } finally {
     loadingDetailsByReservationId.value = {
       ...loadingDetailsByReservationId.value,
@@ -295,7 +378,7 @@ onMounted(load)
                         class="btn btn-sm btn-success"
                         type="button"
                         :disabled="r.statut === 'PAYEE' || r.statut === 'ANNULEE'"
-                        @click="payReservation(r.id)"
+                        @click="openPayModal(r.id)"
                       >
                         Payer
                       </button>
@@ -381,7 +464,7 @@ onMounted(load)
                                                 :key="String(d.id) + '|' + s.type + '|' + s.categorie"
                                                 class="small"
                                               >
-                                                {{ s.type }} {{ s.categorie }} {{ s.count }}
+                                                {{ s.type }} {{ s.categorie }} : {{ s.count }}
                                               </div>
                                             </div>
 
@@ -429,4 +512,72 @@ onMounted(load)
       </div>
     </div>
   </section>
+
+  <div
+    v-if="payModalOpen"
+    class="modal fade show"
+    tabindex="-1"
+    style="display: block; background: rgba(0, 0, 0, 0.5)"
+    @click.self="closePayModal"
+  >
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Paiement réservation #{{ payModalReservationId }}</h5>
+          <button type="button" class="btn-close" @click="closePayModal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div v-if="payPreviewLoading" class="text-muted">Chargement...</div>
+          <div v-else-if="payPreviewError" class="alert alert-danger">{{ payPreviewError }}</div>
+          <div v-else>
+            <div v-if="payPreviewGroupedLines.length === 0" class="text-muted">Aucun détail</div>
+
+            <div v-else class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Catégorie</th>
+                    <th class="text-end">Nombre places</th>
+                    <th class="text-end">Prix unitaire</th>
+                    <th class="text-end">Prix total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(g, idx) in payPreviewGroupedLines" :key="String(payModalReservationId) + '|' + idx">
+                    <td>{{ g.type }}</td>
+                    <td>{{ g.categorie }}</td>
+                    <td class="text-end">{{ g.count }}</td>
+                    <td class="text-end">{{ g.unitPrice.toFixed(2) }}</td>
+                    <td class="text-end">{{ g.totalPrice.toFixed(2) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="fw-semibold">
+                    <td colspan="2" class="text-end">TOTAL</td>
+                    <td class="text-end">{{ payPreviewTotalCount }}</td>
+                    <td></td>
+                    <td class="text-end">{{ payPreviewTotalAmount.toFixed(2) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" @click="closePayModal">Annuler</button>
+          <button
+            type="button"
+            class="btn btn-success"
+            :disabled="payPreviewLoading || Boolean(payPreviewError)"
+            @click="confirmPayReservation"
+          >
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
@@ -33,9 +32,6 @@ public class DetailsReservation {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "id_categorie_client", nullable = false)
   private CategorieClient categorieClient;
-
-  @Column(nullable = false)
-  private BigDecimal prix;
 
   @Column(name = "cree_le", insertable = false, updatable = false)
   private Instant creeLe;
@@ -70,14 +66,6 @@ public class DetailsReservation {
 
   public void setCategorieClient(CategorieClient categorieClient) {
     this.categorieClient = categorieClient;
-  }
-
-  public BigDecimal getPrix() {
-    return prix;
-  }
-
-  public void setPrix(BigDecimal prix) {
-    this.prix = prix;
   }
 
   public Instant getCreeLe() {

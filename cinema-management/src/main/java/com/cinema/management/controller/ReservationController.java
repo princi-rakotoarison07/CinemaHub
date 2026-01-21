@@ -48,6 +48,11 @@ public class ReservationController {
     return toDto(reservationService.pay(id));
   }
 
+  @GetMapping("/{id}/pay-preview")
+  public PayPreviewDto payPreview(@PathVariable Long id) {
+    return toPayPreviewDto(reservationService.previewPay(id));
+  }
+
   @DeleteMapping("/{id}")
   public void delete(@PathVariable Long id) {
     reservationService.delete(id);
@@ -84,4 +89,39 @@ public class ReservationController {
 
   public record ReservationCreateRequest(
       Long clientId, Long seanceId, List<ReservationService.Item> items) {}
+
+  private static PayPreviewDto toPayPreviewDto(ReservationService.PayPreview p) {
+    List<PayPreviewLineDto> lines =
+        p.lines().stream().map(ReservationController::toPayPreviewLineDto).collect(Collectors.toList());
+    return new PayPreviewDto(p.reservationId(), p.total(), lines);
+  }
+
+  private static PayPreviewLineDto toPayPreviewLineDto(ReservationService.PayPreviewLine l) {
+    Long placeId = l.place() != null ? l.place().getId() : null;
+    String rangee = l.place() != null ? l.place().getRangee() : null;
+    Integer numero = l.place() != null ? l.place().getNumero() : null;
+    String placeLabel =
+        (rangee != null && numero != null) ? (rangee + numero) : (placeId != null ? String.valueOf(placeId) : null);
+
+    Long typePlaceId =
+        l.place() != null && l.place().getTypePlace() != null ? l.place().getTypePlace().getId() : null;
+    String typePlaceLibelle =
+        l.place() != null && l.place().getTypePlace() != null ? l.place().getTypePlace().getLibelle() : null;
+
+    Long categorieId = l.categorieClient() != null ? l.categorieClient().getId() : null;
+    String categorieLibelle = l.categorieClient() != null ? l.categorieClient().getLibelle() : null;
+
+    return new PayPreviewLineDto(
+        placeId != null ? new PlaceRef(placeId, rangee, numero, placeLabel, typePlaceId, typePlaceLibelle) : null,
+        categorieId != null ? new CategorieClientRef(categorieId, categorieLibelle) : null,
+        l.prix());
+  }
+
+  public record PlaceRef(Long id, String rangee, Integer numero, String label, Long typePlaceId, String typePlaceLibelle) {}
+
+  public record CategorieClientRef(Long id, String libelle) {}
+
+  public record PayPreviewLineDto(PlaceRef place, CategorieClientRef categorieClient, java.math.BigDecimal prix) {}
+
+  public record PayPreviewDto(Long reservationId, java.math.BigDecimal total, List<PayPreviewLineDto> lines) {}
 }

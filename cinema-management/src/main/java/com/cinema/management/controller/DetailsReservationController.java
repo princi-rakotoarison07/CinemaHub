@@ -58,8 +58,7 @@ public class DetailsReservationController {
         d.getId(),
         reservationId != null ? new ReservationRef(reservationId) : null,
         placeId != null ? new PlaceRef(placeId, rangee, numero, placeLabel, typePlaceId, typePlaceLibelle) : null,
-        categorieId != null ? new CategorieClientRef(categorieId, categorieLibelle) : null,
-        d.getPrix());
+        categorieId != null ? new CategorieClientRef(categorieId, categorieLibelle) : null);
   }
 
   public record ReservationRef(Long id) {}
@@ -72,6 +71,5 @@ public class DetailsReservationController {
       Long id,
       ReservationRef reservation,
       PlaceRef place,
-      CategorieClientRef categorieClient,
-      java.math.BigDecimal prix) {}
+      CategorieClientRef categorieClient) {}
 }

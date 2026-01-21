@@ -563,7 +563,7 @@ onMounted(() => {
 
             <form class="row g-4" @submit.prevent="submit">
               <!-- Deux colonnes principales -->
-              <div class="col-12 col-lg-8">
+              <div class="col-12 col-lg-6">
                 <!-- Mode d'insertion -->
                 <div class="row g-3 mb-4">
                   <div class="col-12">
@@ -701,23 +701,11 @@ onMounted(() => {
                     </div>
                   </div>
                 </div>
-
-                <!-- Boutons d'action -->
-                <div class="row g-3">
-                  <div class="col-12 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit" :disabled="loading">
-                      Enregistrer
-                    </button>
-                    <RouterLink class="btn btn-secondary" to="/reservations">Annuler</RouterLink>
-                  </div>
-                </div>
-
-                <div v-if="loading" class="text-muted mt-3">Chargement...</div>
               </div>
 
               <!-- Colonne droite : Places -->
-              <div class="col-12 col-lg-4">
-                <div class="card">
+              <div class="col-12 col-lg-6">
+                <div class="card shadow-none border">
                   <div class="card-body places-card-body">
                     <h6 class="card-title">Sélection des places</h6>
 
@@ -768,33 +756,35 @@ onMounted(() => {
                           </span>
                         </div>
                         
-                        <div class="legend">
-                          <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="legend-color" style="background-color: #198754; width: 20px; height: 20px;"></span>
-                            <small>Sélectionnée</small>
+                        <div class="row">
+                          <div class="col-md-6 legend">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                              <span class="legend-color" style="background-color: #198754; width: 16px; height: 16px;"></span>
+                              <small>Sélectionnée</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                              <span class="legend-color" style="background-color: #dc3545; width: 16px; height: 16px;"></span>
+                              <small>Occupée</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="legend-color" style="background-color: #6c757d; border: 1px solid #6c757d; width: 16px; height: 16px;"></span>
+                              <small>Disponible</small>
+                            </div>
                           </div>
-                          <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="legend-color" style="background-color: #dc3545; width: 20px; height: 20px;"></span>
-                            <small>Occupée</small>
-                          </div>
-                          <div class="d-flex align-items-center gap-2">
-                            <span class="legend-color" style="background-color: #6c757d; border: 1px solid #6c757d; width: 20px; height: 20px;"></span>
-                            <small>Disponible</small>
-                          </div>
-                        </div>
 
-                        <div class="legend mt-2 pt-2 border-top">
-                          <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="legend-color" style="background-color: var(--bs-primary); width: 20px; height: 20px;"></span>
-                            <small>STANDARD</small>
-                          </div>
-                          <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="legend-color" style="background-color: var(--bs-warning); width: 20px; height: 20px;"></span>
-                            <small>VIP</small>
-                          </div>
-                          <div class="d-flex align-items-center gap-2">
-                            <span class="legend-color" style="background-color: var(--bs-info); width: 20px; height: 20px;"></span>
-                            <small>PMR</small>
+                          <div class="col-md-6 legend border-start">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                              <span class="legend-color" style="background-color: var(--bs-primary); width: 16px; height: 16px;"></span>
+                              <small>STANDARD</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                              <span class="legend-color" style="background-color: var(--bs-warning); width: 16px; height: 16px;"></span>
+                              <small>VIP</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="legend-color" style="background-color: var(--bs-info); width: 16px; height: 16px;"></span>
+                              <small>PMR</small>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -803,60 +793,96 @@ onMounted(() => {
                 </div>
               </div>
 
-              <div class="col-12">
-                <div class="mt-4 pt-3 border-top">
-                  <div class="fw-semibold mb-2">Détail par type réservé</div>
+              <!-- Récapitulatifs en bas -->
+              <div class="col-12 col-lg-6">
+                <div class="card shadow-none border h-100">
+                  <div class="card-body">
+                    <h6 class="card-title fs-6">Détail par type réservé</h6>
 
-                  <div v-if="selectedPlaceIds.length === 0" class="text-muted">Aucune place sélectionnée</div>
+                    <div v-if="selectedPlaceIds.length === 0" class="text-muted small">Aucune place sélectionnée</div>
 
-                  <div v-else>
-                    <div
-                      v-for="row in selectedByTypeAndCategorie"
-                      :key="String(row.typePlaceId) + '|' + String(row.categorieClientId)"
-                      class="d-flex justify-content-between"
-                    >
-                      <span>
-                        {{ row.count }} {{ row.typeLibelle }} {{ row.categorieLibelle }} tarif
-                        {{ formatMoney(prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0) }}
-                        total
-                        {{
-                          formatMoney(
-                            row.count *
-                              (prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0),
-                          )
-                        }}
-                      </span>
-                    </div>
+                    <div v-else>
+                      <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                          <tbody>
+                            <tr
+                              v-for="row in selectedByTypeAndCategorie"
+                              :key="String(row.typePlaceId) + '|' + String(row.categorieClientId)"
+                            >
+                              <td>{{ row.count }}x {{ row.typeLibelle }} ({{ row.categorieLibelle }})</td>
+                              <td class="text-end">
+                                {{ formatMoney(prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0) }} Ar
+                              </td>
+                              <td class="text-end fw-bold">
+                                {{
+                                  formatMoney(
+                                    row.count *
+                                      (prixByTypePlaceAndCategorieId.get(`${String(row.typePlaceId)}|${String(row.categorieClientId)}`) ?? 0),
+                                  )
+                                }} Ar
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
 
-                    <div class="pt-2 mt-2 border-top d-flex gap-2">
-                      <span class="text-muted">TOTAL :</span>
-                      <span class="fw-semibold">{{ formatMoney(totalReservedMontant) }}</span>
+                      <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small uppercase">TOTAL RÉSERVÉ</span>
+                        <span class="fw-bold text-primary fs-5">{{ formatMoney(totalReservedMontant) }} Ar</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="col-12">
-                <div class="mt-4 pt-3 border-top">
-                  <div class="fw-semibold mb-2">Détail par type non disponible</div>
+              <div class="col-12 col-lg-6">
+                <div class="card shadow-none border h-100">
+                  <div class="card-body">
+                    <h6 class="card-title fs-6">Détail par type non disponible</h6>
 
-                  <div v-if="occupiedPlaces.length === 0" class="text-muted">Aucune place non disponible</div>
+                    <div v-if="occupiedPlaces.length === 0" class="text-muted small">Aucune place non disponible</div>
 
-                  <div v-else>
-                    <div
-                      v-for="row in occupiedByType"
-                      :key="'occ|' + row.typePlaceId + '|' + row.libelle"
-                      class="d-flex justify-content-between"
-                    >
-                      <span>
-                        {{ row.count }} {{ row.libelle }} tarif {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }} total {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }}
-                      </span>
+                    <div v-else>
+                      <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                          <tbody>
+                            <tr
+                              v-for="row in occupiedByType"
+                              :key="'occ|' + row.typePlaceId + '|' + row.libelle"
+                            >
+                              <td>{{ row.count }}x {{ row.libelle }}</td>
+                              <td class="text-end">
+                                {{ formatMoney(prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0) }} Ar
+                              </td>
+                              <td class="text-end fw-bold">
+                                {{ formatMoney(row.count * (prixAdulteByTypePlaceId.get(String(row.typePlaceId)) ?? 0)) }} Ar
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small uppercase">TOTAL OCCUPÉ</span>
+                        <span class="fw-bold text-danger fs-5">{{ formatMoney(totalOccupiedMontant) }} Ar</span>
+                      </div>
                     </div>
+                  </div>
+                </div>
+              </div>
 
-                    <div class="pt-2 mt-2 border-top d-flex gap-2">
-                      <span class="text-muted">TOTAL :</span>
-                      <span class="fw-semibold">{{ formatMoney(totalOccupiedMontant) }}</span>
-                    </div>
+              <!-- Boutons d'action en bas de page -->
+              <div class="col-12 mt-4">
+                <div class="card shadow-none border-0 bg-light">
+                  <div class="card-body d-flex justify-content-end gap-3 py-3">
+                    <RouterLink class="btn btn-secondary px-4" to="/reservations">
+                      <i class="bi bi-x-circle me-1"></i> Annuler
+                    </RouterLink>
+                    <button class="btn btn-primary px-5" type="submit" :disabled="loading">
+                      <i v-if="loading" class="spinner-border spinner-border-sm me-1"></i>
+                      <i v-else class="bi bi-check-circle me-1"></i>
+                      Confirmer la réservation
+                    </button>
                   </div>
                 </div>
               </div>
@@ -870,7 +896,7 @@ onMounted(() => {
 
 <style scoped>
 .places-grid {
-  max-height: 400px;
+  height: 350px;
   overflow-y: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
@@ -878,43 +904,41 @@ onMounted(() => {
   background-color: #f8f9fa;
 }
 
-.places-card-body {
-  min-height: 560px;
-}
-
 .place-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  margin: 2px;
+  font-size: 0.75rem;
+  margin: 1px;
+  padding: 0;
 }
 
 .legend-color {
-  border-radius: 3px;
+  border-radius: 2px;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .places-info {
-  padding: 1rem;
-  border-top: 1px solid #dee2e6;
-  margin-top: 1rem;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .legend {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #6c757d;
+}
+
+.uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 @media (max-width: 992px) {
   .places-grid {
-    max-height: 300px;
-  }
-
-  .places-card-body {
-    min-height: 480px;
+    height: 300px;
   }
 }
 </style>

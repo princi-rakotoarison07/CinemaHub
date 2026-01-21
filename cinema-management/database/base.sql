@@ -127,7 +127,6 @@ CREATE TABLE details_reservation (
   id_reservation INT NOT NULL REFERENCES reservation(id) ON DELETE CASCADE,
   id_place INT NOT NULL REFERENCES place(id),
   id_categorie_client INT NOT NULL REFERENCES categorie_client(id),
-  prix NUMERIC(12,2) NOT NULL,
   cree_le TIMESTAMPTZ DEFAULT now(),
   UNIQUE (id_reservation, id_place)
 );

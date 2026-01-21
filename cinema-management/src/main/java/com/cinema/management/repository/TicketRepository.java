@@ -14,6 +14,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
   @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "categorieClient"})
   List<Ticket> findAll();
 
+  @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "place.typePlace", "categorieClient"})
+  List<Ticket> findByReservationId(Long reservationId);
+
   @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "categorieClient"})
   Optional<Ticket> findById(Long id);
 

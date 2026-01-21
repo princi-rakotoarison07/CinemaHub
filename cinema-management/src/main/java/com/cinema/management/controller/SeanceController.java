@@ -4,7 +4,7 @@ import com.cinema.management.entity.Seance;
 import com.cinema.management.entity.Place;
 import com.cinema.management.service.SeanceService;
 import com.cinema.management.service.PlaceService;
-import com.cinema.management.repository.TicketRepository;
+import com.cinema.management.repository.DetailsReservationRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Collection;
@@ -25,14 +25,17 @@ public class SeanceController {
 
   private final SeanceService seanceService;
   private final PlaceService placeService;
-  private final TicketRepository ticketRepository;
+  private final DetailsReservationRepository detailsReservationRepository;
 
   private static final List<String> STATUTS_OCCUPES = List.of("EN_ATTENTE", "CONFIRMEE", "PAYEE");
 
-  public SeanceController(SeanceService seanceService, PlaceService placeService, TicketRepository ticketRepository) {
+  public SeanceController(
+      SeanceService seanceService,
+      PlaceService placeService,
+      DetailsReservationRepository detailsReservationRepository) {
     this.seanceService = seanceService;
     this.placeService = placeService;
-    this.ticketRepository = ticketRepository;
+    this.detailsReservationRepository = detailsReservationRepository;
   }
 
   @GetMapping
@@ -70,7 +73,7 @@ public class SeanceController {
 
     List<Place> places = placeService.findBySalleId(salleId);
     Collection<Long> occupiedIds =
-        new HashSet<>(ticketRepository.findOccupiedPlaceIdsBySeanceId(id, STATUTS_OCCUPES));
+        new HashSet<>(detailsReservationRepository.findOccupiedPlaceIdsBySeanceId(id, STATUTS_OCCUPES));
 
     return places.stream()
         .map(p -> {
