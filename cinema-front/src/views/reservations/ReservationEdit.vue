@@ -574,8 +574,9 @@ const togglePlace = (p) => {
       }
     }
   } else {
-    // Sélectionner une nouvelle place
-    if (p.occupee && !selectedPlaceIds.value.includes(p.id)) return
+    // Sélectionner une nouvelle place OU Resélectionner une ancienne place (original)
+    // Si la place est occupée par quelqu'un d'autre (et pas dans nos originaux), on ne peut pas la prendre
+    if (p.occupee && !isOriginal(id) && !isSelected(id)) return
     
     // Pour ajouter, il faut savoir quelle catégorie utiliser
     // On prend la première ligne de categorieRows par défaut ou on demande
@@ -586,6 +587,7 @@ const togglePlace = (p) => {
         let matchingRow = categorieRows.value.find(r => String(r.typePlaceId) === String(p.typePlaceId))
 
         // Si on est au max OU si aucune ligne ne correspond à ce type de place, on ajuste la quantité
+        // Cas spécial : Si c'est une ancienne place qu'on réactive, il faut s'assurer qu'on incrémente la quantité
         if (!canSelectMorePlaces.value || !matchingRow) {
           if (matchingRow) {
             matchingRow.quantite++
@@ -599,8 +601,25 @@ const togglePlace = (p) => {
             }
             categorieRows.value.push(matchingRow)
           }
+        } else {
+           // Si on pouvait encore sélectionner (canSelectMorePlaces est true), 
+           // mais qu'on vient de cliquer sur une place, on doit quand même incrémenter la quantité 
+           // car le tableau définit le BESOIN et la sélection REMPLIT ce besoin.
+           // MAIS ici, la logique est inversée par rapport au formulaire de création :
+           // On veut que cliquer sur une place AJOUTE au besoin si nécessaire.
+           
+           // Si on a déjà assez de places sélectionnées pour couvrir la quantité demandée dans matchingRow
+           // Alors on doit augmenter la quantité demandée
+           const selectedForThisType = selectedPlaceIds.value.filter(pid => {
+             const place = places.value.find(pl => String(pl.id) === String(pid))
+             return place && String(place.typePlaceId) === String(matchingRow.typePlaceId)
+           }).length
+           
+           if (selectedForThisType >= matchingRow.quantite) {
+             matchingRow.quantite++
+           }
         }
-
+        
         selectedPlaceIds.value = [...selectedPlaceIds.value, id]
         // On associe la place à la catégorie de la ligne (qui existe maintenant forcément)
         selectedCategorieByPlaceId.value[String(id)] = String(matchingRow.categorieClientId)

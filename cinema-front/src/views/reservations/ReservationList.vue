@@ -350,7 +350,7 @@ onMounted(load)
             <div v-if="error" class="alert alert-danger">{{ error }}</div>
             <div v-else-if="loading" class="text-muted">Chargement...</div>
 
-            <div v-else class="table-responsive shadow-sm rounded border" style="max-height: 950px; overflow-y: auto;">
+            <div v-else class="table-responsive shadow-sm rounded border" style="min-height: 500px; max-height: 1200px; overflow-y: auto;">
               <table class="table table-striped table-hover align-middle mb-0">
                 <thead class="sticky-top bg-white shadow-sm" style="z-index: 1;">
                   <tr>
