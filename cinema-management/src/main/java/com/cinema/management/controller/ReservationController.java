@@ -1,6 +1,7 @@
 package com.cinema.management.controller;
 
 import com.cinema.management.entity.Reservation;
+import com.cinema.management.entity.DetailsReservation;
 import com.cinema.management.service.ReservationService;
 import java.util.List;
 import java.util.Optional;
@@ -33,19 +34,32 @@ public class ReservationController {
 
   @GetMapping("/{id}")
   public Optional<ReservationDto> getById(@PathVariable Long id) {
-    return reservationService.findById(id).map(ReservationController::toDto);
+    return reservationService.findById(id).map(r -> {
+      List<DetailsReservation> details = reservationService.findDetailsByReservationId(r.getId());
+      return toDto(r, details);
+    });
   }
 
   @PostMapping
   public ReservationDto create(@RequestBody ReservationCreateRequest request) {
-    return toDto(
-        reservationService.createReservation(
-            request.clientId(), request.seanceId(), request.items()));
+    Reservation r = reservationService.createReservation(
+            request.clientId(), request.seanceId(), request.items());
+    List<DetailsReservation> details = reservationService.findDetailsByReservationId(r.getId());
+    return toDto(r, details);
+  }
+
+  @PutMapping("/{id}")
+  public ReservationDto update(@PathVariable Long id, @RequestBody ReservationCreateRequest request) {
+    Reservation r = reservationService.updateReservation(id, request.items());
+    List<DetailsReservation> details = reservationService.findDetailsByReservationId(r.getId());
+    return toDto(r, details);
   }
 
   @PutMapping("/{id}/pay")
   public ReservationDto pay(@PathVariable Long id) {
-    return toDto(reservationService.pay(id));
+    Reservation r = reservationService.pay(id);
+    List<DetailsReservation> details = reservationService.findDetailsByReservationId(r.getId());
+    return toDto(r, details);
   }
 
   @GetMapping("/{id}/pay-preview")
@@ -59,9 +73,19 @@ public class ReservationController {
   }
 
   private static ReservationDto toDto(Reservation r) {
+    return toDto(r, List.of());
+  }
+
+  private static ReservationDto toDto(Reservation r, List<DetailsReservation> details) {
     Long clientId = r.getClient() != null ? r.getClient().getId() : null;
     Long seanceId = r.getSeance() != null ? r.getSeance().getId() : null;
     String statutCode = r.getStatut() != null ? r.getStatut().getCode() : null;
+
+    List<DetailsItemDto> items = details.stream()
+        .filter(d -> d.getIsActif() != null && d.getIsActif())
+        .map(d -> toDetailsItemDto(d))
+        .collect(Collectors.toList());
+
     return new ReservationDto(
         r.getId(),
         clientId != null ? new ClientRef(clientId) : null,
@@ -70,12 +94,29 @@ public class ReservationController {
         r.getNbPlace(),
         r.getMontantTotal(),
         r.getDateReservation(),
-        r.getDateExpiration());
+        r.getDateExpiration(),
+        items);
+  }
+
+  private static DetailsItemDto toDetailsItemDto(DetailsReservation d) {
+    Long placeId = d.getPlace() != null ? d.getPlace().getId() : null;
+    String rangee = d.getPlace() != null ? d.getPlace().getRangee() : null;
+    Integer numero = d.getPlace() != null ? d.getPlace().getNumero() : null;
+    Long typePlaceId = d.getPlace() != null && d.getPlace().getTypePlace() != null ? d.getPlace().getTypePlace().getId() : null;
+    Long catId = d.getCategorieClient() != null ? d.getCategorieClient().getId() : null;
+    
+    return new DetailsItemDto(
+        d.getId(),
+        placeId != null ? new PlaceRef(placeId, rangee, numero, rangee + numero, typePlaceId, null) : null,
+        catId != null ? new CategorieClientRef(catId, d.getCategorieClient().getLibelle()) : null
+    );
   }
 
   public record ClientRef(Long id) {}
 
   public record SeanceRef(Long id) {}
+
+  public record DetailsItemDto(Long id, PlaceRef place, CategorieClientRef categorieClient) {}
 
   public record ReservationDto(
       Long id,
@@ -85,14 +126,15 @@ public class ReservationController {
       Integer nbPlace,
       java.math.BigDecimal montantTotal,
       java.time.Instant dateReservation,
-      java.time.Instant dateExpiration) {}
+      java.time.Instant dateExpiration,
+      List<DetailsItemDto> items) {}
 
   public record ReservationCreateRequest(
       Long clientId, Long seanceId, List<ReservationService.Item> items) {}
 
   private static PayPreviewDto toPayPreviewDto(ReservationService.PayPreview p) {
     List<PayPreviewLineDto> lines =
-        p.lines().stream().map(ReservationController::toPayPreviewLineDto).collect(Collectors.toList());
+        p.lines().stream().map(l -> toPayPreviewLineDto(l)).collect(Collectors.toList());
     return new PayPreviewDto(p.reservationId(), p.total(), lines);
   }
 

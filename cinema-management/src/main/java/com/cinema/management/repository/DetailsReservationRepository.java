@@ -20,14 +20,17 @@ public interface DetailsReservationRepository extends JpaRepository<DetailsReser
   @EntityGraph(attributePaths = {"reservation", "reservation.seance", "place", "place.typePlace", "categorieClient"})
   List<DetailsReservation> findByReservationId(Long reservationId);
 
-  boolean existsByPlaceIdAndReservationSeanceIdAndReservationStatutCodeIn(
+  boolean existsByPlaceIdAndReservationSeanceIdAndIsActifTrueAndReservationStatutCodeIn(
       Long placeId, Long seanceId, Collection<String> statuts);
+
+  boolean existsByPlaceIdAndReservationSeanceIdAndIsActifTrueAndReservationStatutCodeInAndReservationIdNot(
+      Long placeId, Long seanceId, Collection<String> statuts, Long excludeReservationId);
 
   @Query(
       "select distinct d.place.id "
           + "from DetailsReservation d "
           + "join d.reservation r "
-          + "where r.seance.id = :seanceId and r.statut.code in :statuts")
+          + "where r.seance.id = :seanceId and d.isActif = true and r.statut.code in :statuts")
   List<Long> findOccupiedPlaceIdsBySeanceId(
       @Param("seanceId") Long seanceId, @Param("statuts") Collection<String> statuts);
 }

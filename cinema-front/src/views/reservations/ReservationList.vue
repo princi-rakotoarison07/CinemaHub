@@ -350,9 +350,9 @@ onMounted(load)
             <div v-if="error" class="alert alert-danger">{{ error }}</div>
             <div v-else-if="loading" class="text-muted">Chargement...</div>
 
-            <div v-else class="table-responsive">
-              <table class="table table-striped">
-                <thead>
+            <div v-else class="table-responsive shadow-sm rounded border" style="max-height: 950px; overflow-y: auto;">
+              <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="sticky-top bg-white shadow-sm" style="z-index: 1;">
                   <tr>
                     <th>Client</th>
                     <th>Date/Heure séance</th>
@@ -374,14 +374,37 @@ onMounted(load)
                     <td>{{ r.montantTotal }}</td>
                     <td>{{ formatDate(r.dateExpiration) }}</td>
                     <td>
-                      <button
-                        class="btn btn-sm btn-success"
-                        type="button"
-                        :disabled="r.statut === 'PAYEE' || r.statut === 'ANNULEE'"
-                        @click="openPayModal(r.id)"
-                      >
-                        Payer
-                      </button>
+                      <div class="dropdown">
+                        <button
+                          class="btn btn-sm btn-light border-0"
+                          type="button"
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false"
+                        >
+                          <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                          <li>
+                            <button
+                              class="dropdown-item py-2"
+                              type="button"
+                              :disabled="r.statut === 'PAYEE' || r.statut === 'ANNULEE'"
+                              @click="openPayModal(r.id)"
+                            >
+                              <i class="bi bi-cash-coin me-2 text-success"></i> Payer
+                            </button>
+                          </li>
+                          <li>
+                            <RouterLink
+                              :to="'/reservations/' + r.id + '/edit'"
+                              class="dropdown-item py-2"
+                              :class="{ 'disabled': r.statut === 'PAYEE' || r.statut === 'ANNULEE' }"
+                            >
+                              <i class="bi bi-pencil-square me-2 text-primary"></i> Modification
+                            </RouterLink>
+                          </li>
+                        </ul>
+                      </div>
                     </td>
                   </tr>
                   <tr v-if="reservations.length === 0">

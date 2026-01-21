@@ -33,6 +33,9 @@ public class DetailsReservation {
   @JoinColumn(name = "id_categorie_client", nullable = false)
   private CategorieClient categorieClient;
 
+  @Column(name = "is_actif")
+  private Boolean isActif = true;
+
   @Column(name = "cree_le", insertable = false, updatable = false)
   private Instant creeLe;
 
@@ -66,6 +69,14 @@ public class DetailsReservation {
 
   public void setCategorieClient(CategorieClient categorieClient) {
     this.categorieClient = categorieClient;
+  }
+
+  public Boolean getIsActif() {
+    return isActif;
+  }
+
+  public void setIsActif(Boolean isActif) {
+    this.isActif = isActif;
   }
 
   public Instant getCreeLe() {
