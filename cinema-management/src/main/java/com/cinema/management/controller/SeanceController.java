@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Collection;
 import java.util.HashSet;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -41,6 +44,18 @@ public class SeanceController {
   @GetMapping
   public List<SeanceDto> getAll() {
     return seanceService.findAll().stream().map(SeanceController::toDto).collect(Collectors.toList());
+  }
+
+  @GetMapping("/by-interval")
+  public List<SeanceDto> getByInterval(
+      @RequestParam("dateDebut") LocalDate dateDebut,
+      @RequestParam("dateFin") LocalDate dateFin) {
+    if (dateDebut == null || dateFin == null) return List.of();
+    java.time.Instant from = dateDebut.atStartOfDay().toInstant(ZoneOffset.UTC);
+    java.time.Instant to = dateFin.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+    return seanceService.findByDateHeureBetween(from, to).stream()
+        .map(SeanceController::toDto)
+        .collect(Collectors.toList());
   }
 
   @GetMapping("/{id}")

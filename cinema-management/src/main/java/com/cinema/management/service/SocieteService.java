@@ -33,7 +33,6 @@ public class SocieteService {
     existing.setContact(societe.getContact());
     existing.setEmail(societe.getEmail());
     existing.setTelephone(societe.getTelephone());
-    existing.setActif(societe.getActif());
     return societeRepository.save(existing);
   }
 

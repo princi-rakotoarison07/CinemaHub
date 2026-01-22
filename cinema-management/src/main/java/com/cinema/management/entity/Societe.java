@@ -27,8 +27,6 @@ public class Societe {
 
   private String telephone;
 
-  private Boolean actif;
-
   @Column(name = "cree_le", insertable = false, updatable = false)
   private Instant creeLe;
 
@@ -70,14 +68,6 @@ public class Societe {
 
   public void setTelephone(String telephone) {
     this.telephone = telephone;
-  }
-
-  public Boolean getActif() {
-    return actif;
-  }
-
-  public void setActif(Boolean actif) {
-    this.actif = actif;
   }
 
   public Instant getCreeLe() {

@@ -27,7 +27,13 @@ import ReservationList from '../views/reservations/ReservationList.vue'
 import ReservationForm from '../views/reservations/ReservationForm.vue'
 import ReservationEdit from '../views/reservations/ReservationEdit.vue'
 import ReservationSimulation from '../views/reservations/ReservationSimulation.vue'
+import ContratPubliciteList from '../views/publicites/ContratPubliciteList.vue'
 import ContratPubliciteForm from '../views/publicites/ContratPubliciteForm.vue'
+import PaiementContratPubliciteByContrat from '../views/publicites/PaiementContratPubliciteByContrat.vue'
+import ChiffreAffairePublicite from '../views/publicites/ChiffreAffairePublicite.vue'
+import SocieteGrid from '../views/publicites/config/SocieteGrid.vue'
+import VideoPublicitaireGrid from '../views/publicites/config/VideoPublicitaireGrid.vue'
+import TarifPubliciteGrid from '../views/publicites/config/TarifPubliciteGrid.vue'
 
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
@@ -181,9 +187,40 @@ const router = createRouter({
           props: true,
         },
         {
+          path: 'publicites/contrats',
+          name: 'publicites-contrats-list',
+          component: ContratPubliciteList,
+        },
+        {
+          path: 'publicites/contrats/:id/payer',
+          name: 'publicites-contrats-payer',
+          component: PaiementContratPubliciteByContrat,
+          props: true,
+        },
+        {
           path: 'publicites/contrats/new',
           name: 'publicites-contrats-new',
           component: ContratPubliciteForm,
+        },
+        {
+          path: 'publicites/chiffres-affaire',
+          name: 'publicites-chiffres-affaire',
+          component: ChiffreAffairePublicite,
+        },
+        {
+          path: 'publicites/config/societes',
+          name: 'publicites-config-societes',
+          component: SocieteGrid,
+        },
+        {
+          path: 'publicites/config/videos-publicitaires',
+          name: 'publicites-config-videos-publicitaires',
+          component: VideoPublicitaireGrid,
+        },
+        {
+          path: 'publicites/config/tarifs-publicite',
+          name: 'publicites-config-tarifs-publicite',
+          component: TarifPubliciteGrid,
         },
         // {
         //   path: 'advertising',

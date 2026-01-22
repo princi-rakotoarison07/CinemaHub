@@ -24,8 +24,8 @@ public class ContratPublicite {
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "id_societe", nullable = false)
-  private Societe societe;
+  @JoinColumn(name = "id_video_publicitaire", nullable = false)
+  private VideoPublicitaire videoPublicitaire;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "id_tarif_publicite", nullable = false)
@@ -46,8 +46,6 @@ public class ContratPublicite {
   @Column(name = "date_contrat", insertable = false, updatable = false)
   private Instant dateContrat;
 
-  private Boolean actif;
-
   @Column(name = "cree_le", insertable = false, updatable = false)
   private Instant creeLe;
 
@@ -59,12 +57,12 @@ public class ContratPublicite {
     this.id = id;
   }
 
-  public Societe getSociete() {
-    return societe;
+  public VideoPublicitaire getVideoPublicitaire() {
+    return videoPublicitaire;
   }
 
-  public void setSociete(Societe societe) {
-    this.societe = societe;
+  public void setVideoPublicitaire(VideoPublicitaire videoPublicitaire) {
+    this.videoPublicitaire = videoPublicitaire;
   }
 
   public TarifPublicite getTarifPublicite() {
@@ -113,14 +111,6 @@ public class ContratPublicite {
 
   public void setDateContrat(Instant dateContrat) {
     this.dateContrat = dateContrat;
-  }
-
-  public Boolean getActif() {
-    return actif;
-  }
-
-  public void setActif(Boolean actif) {
-    this.actif = actif;
   }
 
   public Instant getCreeLe() {

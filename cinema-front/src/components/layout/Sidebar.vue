@@ -16,6 +16,8 @@ const isSeancesRoute = computed(() => route.path.startsWith('/seances'))
 const isClientsRoute = computed(() => route.path.startsWith('/clients'))
 const isReservationsRoute = computed(() => route.path.startsWith('/reservations'))
 const isPublicitesRoute = computed(() => route.path.startsWith('/publicites'))
+const isPublicitesContratsRoute = computed(() => route.path.startsWith('/publicites/contrats'))
+const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicites/config'))
 </script>
 
 <template>
@@ -333,12 +335,84 @@ const isPublicitesRoute = computed(() => route.path.startsWith('/publicites'))
           data-bs-parent="#sidebar-nav"
         >
           <li>
-            <RouterLink
-              :class="[route.path === '/publicites/contrats/new' ? 'active' : '']"
-              to="/publicites/contrats/new"
+            <a
+              :class="['nav-link', isPublicitesContratsRoute ? '' : 'collapsed']"
+              data-bs-target="#publicites-contrats-nav"
+              data-bs-toggle="collapse"
+              href="#"
             >
-              <i class="bi bi-circle"></i><span>Nouveau contrat</span>
+              <i class="bi bi-folder2"></i><span>Contrat</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul
+              id="publicites-contrats-nav"
+              :class="['nav-content', 'collapse', 'ps-3', isPublicitesContratsRoute ? 'show' : '']"
+              data-bs-parent="#publicites-nav"
+            >
+              <li>
+                <RouterLink
+                  :class="['ms-2', route.path === '/publicites/contrats' ? 'active' : '']"
+                  to="/publicites/contrats"
+                >
+                  <i class="bi bi-dot"></i><span>Liste</span>
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink
+                  :class="['ms-2', route.path === '/publicites/contrats/new' ? 'active' : '']"
+                  to="/publicites/contrats/new"
+                >
+                  <i class="bi bi-dot"></i><span>Nouveau</span>
+                </RouterLink>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <RouterLink
+              :class="[route.path === '/publicites/chiffres-affaire' ? 'active' : '']"
+              to="/publicites/chiffres-affaire"
+            >
+              <i class="bi bi-circle"></i><span>Chiffres d'affaire</span>
             </RouterLink>
+          </li>
+          <li>
+            <a
+              :class="['nav-link', isPublicitesConfigRoute ? '' : 'collapsed']"
+              data-bs-target="#publicites-config-nav"
+              data-bs-toggle="collapse"
+              href="#"
+            >
+              <i class="bi bi-gear"></i><span>Configuration</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul
+              id="publicites-config-nav"
+              :class="['nav-content', 'collapse', 'ps-3', isPublicitesConfigRoute ? 'show' : '']"
+              data-bs-parent="#publicites-nav"
+            >
+              <li>
+                <RouterLink
+                  :class="['ms-2', route.path === '/publicites/config/societes' ? 'active' : '']"
+                  to="/publicites/config/societes"
+                >
+                  <i class="bi bi-dot"></i><span>Grille sociétés</span>
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink
+                  :class="['ms-2', route.path === '/publicites/config/videos-publicitaires' ? 'active' : '']"
+                  to="/publicites/config/videos-publicitaires"
+                >
+                  <i class="bi bi-dot"></i><span>Grille vidéos</span>
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink
+                  :class="['ms-2', route.path === '/publicites/config/tarifs-publicite' ? 'active' : '']"
+                  to="/publicites/config/tarifs-publicite"
+                >
+                  <i class="bi bi-dot"></i><span>Grille tarifs</span>
+                </RouterLink>
+              </li>
+            </ul>
           </li>
         </ul>
       </li>

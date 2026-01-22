@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ContratPubliciteRepository extends JpaRepository<ContratPublicite, Long> {
 
-  @EntityGraph(attributePaths = {"societe", "tarifPublicite"})
+  @EntityGraph(attributePaths = {"videoPublicitaire", "videoPublicitaire.societe", "tarifPublicite"})
   List<ContratPublicite> findAll();
 
-  @EntityGraph(attributePaths = {"societe", "tarifPublicite"})
+  @EntityGraph(attributePaths = {"videoPublicitaire", "videoPublicitaire.societe", "tarifPublicite"})
   Optional<ContratPublicite> findById(Long id);
 }

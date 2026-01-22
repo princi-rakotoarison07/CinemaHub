@@ -4,6 +4,8 @@ import com.cinema.management.entity.TarifPublicite;
 import com.cinema.management.service.TarifPubliciteService;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/tarifs-publicite")
@@ -45,6 +48,13 @@ public class TarifPubliciteController {
 
   @DeleteMapping("/{id}")
   public void delete(@PathVariable Long id) {
-    tarifPubliciteService.delete(id);
+    try {
+      tarifPubliciteService.delete(id);
+    } catch (DataIntegrityViolationException e) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Impossible de supprimer: le tarif est utilisé par des contrats",
+          e);
+    }
   }
 }

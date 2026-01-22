@@ -2,6 +2,7 @@ package com.cinema.management.service;
 
 import com.cinema.management.entity.Seance;
 import com.cinema.management.repository.SeanceRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,10 @@ public class SeanceService {
 
   public List<Seance> findAll() {
     return seanceRepository.findAll();
+  }
+
+  public List<Seance> findByDateHeureBetween(Instant from, Instant to) {
+    return seanceRepository.findByDateHeureBetween(from, to);
   }
 
   public Optional<Seance> findById(Long id) {

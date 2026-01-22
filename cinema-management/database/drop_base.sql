@@ -1,4 +1,10 @@
 DROP TABLE IF EXISTS ticket CASCADE;
+DROP TABLE IF EXISTS paiement_contrat_publicite CASCADE;
+DROP TABLE IF EXISTS diffusion_publicite CASCADE;
+DROP TABLE IF EXISTS contrat_publicite CASCADE;
+DROP TABLE IF EXISTS video_publicitaire CASCADE;
+DROP TABLE IF EXISTS tarif_publicite CASCADE;
+DROP TABLE IF EXISTS societe CASCADE;
 DROP TABLE IF EXISTS details_reservation CASCADE;
 DROP TABLE IF EXISTS reservation CASCADE;
 DROP TABLE IF EXISTS configuration_tarif CASCADE;
