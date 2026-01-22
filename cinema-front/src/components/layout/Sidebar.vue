@@ -15,6 +15,7 @@ const isTicketsRoute = computed(() => route.path.startsWith('/tickets'))
 const isSeancesRoute = computed(() => route.path.startsWith('/seances'))
 const isClientsRoute = computed(() => route.path.startsWith('/clients'))
 const isReservationsRoute = computed(() => route.path.startsWith('/reservations'))
+const isPublicitesRoute = computed(() => route.path.startsWith('/publicites'))
 </script>
 
 <template>
@@ -311,6 +312,32 @@ const isReservationsRoute = computed(() => route.path.startsWith('/reservations'
               to="/reservations/new"
             >
               <i class="bi bi-circle"></i><span>Nouveau</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a
+          :class="['nav-link', isPublicitesRoute ? '' : 'collapsed']"
+          data-bs-target="#publicites-nav"
+          data-bs-toggle="collapse"
+          href="#"
+        >
+          <i class="bi bi-badge-ad"></i><span>Publicité</span
+          ><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul
+          id="publicites-nav"
+          :class="['nav-content', 'collapse', isPublicitesRoute ? 'show' : '']"
+          data-bs-parent="#sidebar-nav"
+        >
+          <li>
+            <RouterLink
+              :class="[route.path === '/publicites/contrats/new' ? 'active' : '']"
+              to="/publicites/contrats/new"
+            >
+              <i class="bi bi-circle"></i><span>Nouveau contrat</span>
             </RouterLink>
           </li>
         </ul>

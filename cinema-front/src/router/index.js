@@ -27,6 +27,7 @@ import ReservationList from '../views/reservations/ReservationList.vue'
 import ReservationForm from '../views/reservations/ReservationForm.vue'
 import ReservationEdit from '../views/reservations/ReservationEdit.vue'
 import ReservationSimulation from '../views/reservations/ReservationSimulation.vue'
+import ContratPubliciteForm from '../views/publicites/ContratPubliciteForm.vue'
 
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
@@ -179,6 +180,16 @@ const router = createRouter({
           component: ReservationSimulation,
           props: true,
         },
+        {
+          path: 'publicites/contrats/new',
+          name: 'publicites-contrats-new',
+          component: ContratPubliciteForm,
+        },
+        // {
+        //   path: 'advertising',
+        //   name: 'advertising-manager',
+        //   component: AdvertisingManager,
+        // },
       ],
     },
   ],
