@@ -285,6 +285,14 @@ const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicite
               <i class="bi bi-circle"></i><span>Nouveau</span>
             </RouterLink>
           </li>
+          <li>
+            <RouterLink
+              :class="[route.path === '/seances/chiffres-affaire' ? 'active' : '']"
+              to="/seances/chiffres-affaire"
+            >
+              <i class="bi bi-circle"></i><span>Chiffre d'affaire</span>
+            </RouterLink>
+          </li>
         </ul>
       </li>
 

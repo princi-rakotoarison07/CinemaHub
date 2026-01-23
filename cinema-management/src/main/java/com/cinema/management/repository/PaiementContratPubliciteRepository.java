@@ -3,6 +3,7 @@ package com.cinema.management.repository;
 import com.cinema.management.entity.PaiementContratPublicite;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -41,4 +42,11 @@ public interface PaiementContratPubliciteRepository extends JpaRepository<Paieme
 
   @Query("select coalesce(sum(p.montant), 0) from PaiementContratPublicite p where p.contratPublicite.id = :contratId")
   BigDecimal sumByContratId(@Param("contratId") Long contratId);
+
+  @Query(
+      "select p.contratPublicite.id, coalesce(sum(p.montant), 0) "
+          + "from PaiementContratPublicite p "
+          + "where p.contratPublicite.id in :contratIds "
+          + "group by p.contratPublicite.id")
+  List<Object[]> sumByContratIds(@Param("contratIds") Collection<Long> contratIds);
 }

@@ -205,9 +205,9 @@ INSERT INTO genre (libelle) VALUES
   ('Aventure'),
   ('Drame');
 
--- Insertion du film Avatar
+-- Insertion du film Titanic
 INSERT INTO film (titre, description, duree_minutes, date_sortie, age_min, langue_originale) VALUES
-  ('Avatar', 'Un marine paraplégique est envoyé sur la lune Pandora pour une mission unique', 162, '2009-12-18', 10, 'Anglais');
+  ('Titanic', 'Un marine paraplégique est envoyé sur la lune Pandora pour une mission unique', 60, '2009-12-18', 10, 'Anglais');
 
 -- Lien film-genre
 INSERT INTO film_genre (id_film, id_genre) VALUES
@@ -273,8 +273,9 @@ END $$;
 
 -- Insertion des séances Avatar pour le 10 janvier 2026
 INSERT INTO seance (id_film, id_salle, date_heure, langue, version) VALUES
-  (1, 1, '2026-01-10 10:00:00+01', 'Français', 'VF'),
-  (1, 2, '2026-02-10 10:00:00+01', 'Français', 'VOST');
+  (1, 2, '2026-01-20 10:00:00+01', 'Français', 'VF'),
+  (1, 2, '2026-01-21 10:00:00+01', 'Français', 'VOST'),
+  (1, 2, '2026-01-21 15:00:00+01', 'Français', 'VOST');
 
 
 

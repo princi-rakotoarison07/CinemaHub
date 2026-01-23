@@ -31,6 +31,20 @@ public class ContratPubliciteController {
     return contratPubliciteService.findAll();
   }
 
+  @GetMapping("/factures")
+  public List<ContratPubliciteService.ContratPubliciteFactureDto> getFactures() {
+    return contratPubliciteService.getFacturesContrats();
+  }
+
+  @GetMapping("/{id}/facture-details")
+  public ContratPubliciteService.ContratPubliciteFactureDetailsDto getFactureDetails(@PathVariable Long id) {
+    try {
+      return contratPubliciteService.getFactureDetails(id);
+    } catch (IllegalArgumentException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+  }
+
   @GetMapping("/{id}")
   public Optional<ContratPublicite> getById(@PathVariable Long id) {
     return contratPubliciteService.findById(id);

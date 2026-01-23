@@ -3,6 +3,7 @@ package com.cinema.management.controller;
 import com.cinema.management.entity.Seance;
 import com.cinema.management.entity.Place;
 import com.cinema.management.service.SeanceService;
+import com.cinema.management.service.SeanceChiffreAffaireService;
 import com.cinema.management.service.PlaceService;
 import com.cinema.management.repository.DetailsReservationRepository;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SeanceController {
 
   private final SeanceService seanceService;
+  private final SeanceChiffreAffaireService seanceChiffreAffaireService;
   private final PlaceService placeService;
   private final DetailsReservationRepository detailsReservationRepository;
 
@@ -34,9 +36,11 @@ public class SeanceController {
 
   public SeanceController(
       SeanceService seanceService,
+      SeanceChiffreAffaireService seanceChiffreAffaireService,
       PlaceService placeService,
       DetailsReservationRepository detailsReservationRepository) {
     this.seanceService = seanceService;
+    this.seanceChiffreAffaireService = seanceChiffreAffaireService;
     this.placeService = placeService;
     this.detailsReservationRepository = detailsReservationRepository;
   }
@@ -56,6 +60,19 @@ public class SeanceController {
     return seanceService.findByDateHeureBetween(from, to).stream()
         .map(SeanceController::toDto)
         .collect(Collectors.toList());
+  }
+
+  @GetMapping("/chiffres-affaire")
+  public List<SeanceChiffreAffaireService.SeanceChiffreAffaireDto> getChiffreAffaireBySeance(
+      @RequestParam(value = "dateDebut", required = false) LocalDate dateDebut,
+      @RequestParam(value = "dateFin", required = false) LocalDate dateFin) {
+    return seanceChiffreAffaireService.getChiffreAffaireBySeance(dateDebut, dateFin);
+  }
+
+  @GetMapping("/{id}/chiffres-affaire-details")
+  public SeanceChiffreAffaireService.SeanceChiffreAffaireDetailsDto getChiffreAffaireDetailsBySeance(
+      @PathVariable Long id) {
+    return seanceChiffreAffaireService.getChiffreAffaireDetailsBySeance(id);
   }
 
   @GetMapping("/{id}")

@@ -91,11 +91,64 @@ INSERT INTO societe (nom, contact, email, telephone) VALUES
 
 INSERT INTO video_publicitaire (id_societe, titre, duree_secondes, date_creation) VALUES
   ((SELECT id FROM societe WHERE nom = 'Vaniala'), 'Vaniala - Spot 15s', 15, '2025-11-15'),
-  ((SELECT id FROM societe WHERE nom = 'Vaniala'), 'Vaniala - Spot 30s', 30, '2025-11-20'),
-  ((SELECT id FROM societe WHERE nom = 'Lewis'), 'Lewis - Spot 20s', 20, '2025-11-10'),
   ((SELECT id FROM societe WHERE nom = 'Lewis'), 'Lewis - Spot 10s', 10, '2025-11-12');
 
 INSERT INTO tarif_publicite (prix_par_diffusion, date_debut, date_fin, actif, description) VALUES
   (200000, '2025-01-01', NULL, true, 'Tarif standard');
+
+
+INSERT INTO societe (nom, contact, email, telephone) VALUES
+  ('Socobis', 'Service marketing', 'contact@socobis.mg', '0340000003');
+
+INSERT INTO video_publicitaire (id_societe, titre, duree_secondes, date_creation) VALUES
+  ((SELECT id FROM societe WHERE nom = 'Socobis' ORDER BY id DESC LIMIT 1), 'Socobis - Spot 10s', 10, '2025-11-20');
+
+INSERT INTO contrat_publicite (id_tarif_publicite, id_video_publicitaire, nb_diffusions, montant_total, date_debut, date_fin) VALUES
+  (
+    (SELECT id FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    (SELECT vp.id FROM video_publicitaire vp JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Vaniala' ORDER BY vp.id LIMIT 1),
+    3,
+    3 * (SELECT prix_par_diffusion FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    '2026-01-20',
+    '2026-01-21'
+  ),
+  (
+    (SELECT id FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    (SELECT vp.id FROM video_publicitaire vp JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Lewis' ORDER BY vp.id LIMIT 1),
+    1,
+    1 * (SELECT prix_par_diffusion FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    '2026-01-20',
+    '2026-01-21'
+  ),
+  (
+    (SELECT id FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    (SELECT vp.id FROM video_publicitaire vp JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Socobis' ORDER BY vp.id DESC LIMIT 1),
+    1,
+    1 * (SELECT prix_par_diffusion FROM tarif_publicite WHERE actif = true ORDER BY date_debut DESC LIMIT 1),
+    '2026-01-21',
+    '2026-01-21'
+  );
+
+INSERT INTO diffusion_publicite (id_contrat_publicite, id_seance, nombre_pub) VALUES
+  (
+    (SELECT c.id FROM contrat_publicite c JOIN video_publicitaire vp ON vp.id = c.id_video_publicitaire JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Vaniala' ORDER BY c.id DESC LIMIT 1),
+    (SELECT id FROM seance WHERE id_film = 1 AND id_salle = 2 AND date_heure = '2026-01-20 10:00:00+01' LIMIT 1),
+    1
+  ),
+  (
+    (SELECT c.id FROM contrat_publicite c JOIN video_publicitaire vp ON vp.id = c.id_video_publicitaire JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Lewis' ORDER BY c.id DESC LIMIT 1),
+    (SELECT id FROM seance WHERE id_film = 1 AND id_salle = 2 AND date_heure = '2026-01-20 10:00:00+01' LIMIT 1),
+    1
+  ),
+  (
+    (SELECT c.id FROM contrat_publicite c JOIN video_publicitaire vp ON vp.id = c.id_video_publicitaire JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Vaniala' ORDER BY c.id DESC LIMIT 1),
+    (SELECT id FROM seance WHERE id_film = 1 AND id_salle = 2 AND date_heure = '2026-01-21 10:00:00+01' LIMIT 1),
+    2
+  ),
+  (
+    (SELECT c.id FROM contrat_publicite c JOIN video_publicitaire vp ON vp.id = c.id_video_publicitaire JOIN societe s ON s.id = vp.id_societe WHERE s.nom = 'Socobis' ORDER BY c.id DESC LIMIT 1),
+    (SELECT id FROM seance WHERE id_film = 1 AND id_salle = 2 AND date_heure = '2026-01-21 10:00:00+01' LIMIT 1),
+    1
+  );
 
 

@@ -10,6 +10,7 @@ import FilmList from '../views/films/FilmList.vue'
 import FilmForm from '../views/films/FilmForm.vue'
 import SeanceList from '../views/seances/SeanceList.vue'
 import SeanceForm from '../views/seances/SeanceForm.vue'
+import SeanceChiffreAffaire from '../views/seances/SeanceChiffreAffaire.vue'
 import TarifList from '../views/tarifs/TarifList.vue'
 import TarifForm from '../views/tarifs/TarifForm.vue'
 import TarifGrid from '../views/tarifs/TarifGrid.vue'
@@ -98,6 +99,11 @@ const router = createRouter({
           path: 'seances/new',
           name: 'seances-new',
           component: SeanceForm,
+        },
+        {
+          path: 'seances/chiffres-affaire',
+          name: 'seances-chiffres-affaire',
+          component: SeanceChiffreAffaire,
         },
         {
           path: 'tarifs',
