@@ -4,11 +4,29 @@ import { API_BASE_URL } from '../../config/api'
 
 const loading = ref(false)
 const revenues = ref([])
+const films = ref([])
+const selectedFilm = ref('')
+const selectedMonth = ref('')
+
+const fetchFilms = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/films`)
+    if (response.ok) {
+      films.value = await response.json()
+    }
+  } catch (error) {
+    console.error('Error fetching films:', error)
+  }
+}
 
 const fetchRevenues = async () => {
   loading.value = true
   try {
-    const response = await fetch(`${API_BASE_URL}/api/stats/seance-revenues`)
+    const params = new URLSearchParams()
+    if (selectedFilm.value) params.append('filmId', selectedFilm.value)
+    if (selectedMonth.value) params.append('month', selectedMonth.value)
+
+    const response = await fetch(`${API_BASE_URL}/api/stats/seance-revenues?${params.toString()}`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
@@ -24,13 +42,13 @@ const formatCurrency = (value) => {
   if (value === null || value === undefined) return '0 Ar'
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MGA' }).format(value)
 }
-
 const formatDate = (date) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('fr-FR')
 }
 
 onMounted(() => {
+  fetchFilms()
   fetchRevenues()
 })
 </script>
@@ -53,6 +71,27 @@ onMounted(() => {
           <div class="card-body">
             <h5 class="card-title">Tableau de Bord des Revenus par Séance</h5>
 
+            <div class="row mb-4">
+              <div class="col-md-4">
+                <label for="filmFilter" class="form-label">Filtrer par Film</label>
+                <select id="filmFilter" class="form-select" v-model="selectedFilm" @change="fetchRevenues">
+                  <option value="">Tous les films</option>
+                  <option v-for="film in films" :key="film.id" :value="film.id">
+                    {{ film.titre }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="monthFilter" class="form-label">Filtrer par Mois</label>
+                <input type="month" id="monthFilter" class="form-control" v-model="selectedMonth" @change="fetchRevenues">
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                 <button class="btn btn-secondary" @click="() => { selectedFilm = ''; selectedMonth = ''; fetchRevenues() }">
+                   Réinitialiser
+                 </button>
+              </div>
+            </div>
+
             <div v-if="loading" class="text-center py-4">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -71,6 +110,7 @@ onMounted(() => {
                     <th scope="col" class="text-end">Tickets</th>
                     <th scope="col" class="text-end">CA Total</th>
                     <th scope="col" class="text-end">CA Réel</th>
+                    <th scope="col" class="text-end">Reste a payer</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -83,6 +123,7 @@ onMounted(() => {
                     <td class="text-end">{{ formatCurrency(rev.montantTickets) }}</td>
                     <td class="text-end fw-bold">{{ formatCurrency(rev.chiffreAffaireTotal) }}</td>
                     <td class="text-end fw-bold text-success">{{ formatCurrency(rev.chiffreAffaireReel) }}</td>
+                    <td class="text-end fw-bold text-danger">{{ formatCurrency(rev.montantTotalPublicite - rev.montantReelPublicite) }}</td>
                   </tr>
                   <tr v-if="revenues.length === 0">
                     <td colspan="8" class="text-center">Aucune donnée disponible</td>

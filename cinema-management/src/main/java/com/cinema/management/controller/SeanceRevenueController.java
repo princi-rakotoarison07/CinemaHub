@@ -5,6 +5,7 @@ import com.cinema.management.service.SeanceRevenueService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -18,7 +19,8 @@ public class SeanceRevenueController {
   }
 
   @GetMapping("/seance-revenues")
-  public List<SeanceRevenueDto> getSeanceRevenues() {
-    return seanceRevenueService.getSeanceRevenueStats();
+  public List<SeanceRevenueDto> getSeanceRevenues(
+      @RequestParam(required = false) Long filmId, @RequestParam(required = false) String month) {
+    return seanceRevenueService.getSeanceRevenueStats(filmId, month);
   }
 }

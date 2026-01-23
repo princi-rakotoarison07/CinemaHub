@@ -40,9 +40,30 @@ public class SeanceRevenueService {
   }
 
   @Transactional(readOnly = true)
-  public List<SeanceRevenueDto> getSeanceRevenueStats() {
+  public List<SeanceRevenueDto> getSeanceRevenueStats(Long filmId, String month) {
     // 1. Fetch all Seances
     List<Seance> seances = seanceRepository.findAll();
+
+    // Filter by Film
+    if (filmId != null) {
+      seances =
+          seances.stream()
+              .filter(s -> s.getFilm() != null && s.getFilm().getId().equals(filmId))
+              .collect(Collectors.toList());
+    }
+
+    // Filter by Month (YYYY-MM)
+    if (month != null && !month.isEmpty()) {
+      seances =
+          seances.stream()
+              .filter(
+                  s -> {
+                    LocalDate date = LocalDate.ofInstant(s.getDateHeure(), ZoneId.systemDefault());
+                    String seanceMonth = date.toString().substring(0, 7);
+                    return seanceMonth.equals(month);
+                  })
+              .collect(Collectors.toList());
+    }
 
     // 2. Fetch Ticket Sales grouped by Seance
     // We assume "sold" means status is CONFIRMEE or PAYEE.
