@@ -167,6 +167,8 @@ const load = async () => {
           dateHeure: x?.dateHeure,
           montantTickets: x?.montantTickets ?? x?.montantTickets ?? 0,
           montantPublicite: x?.montantPublicite ?? x?.montantPublicite ?? 0,
+          montantPublicitePaye: x?.montantPublicitePaye ?? 0,
+          montantPubliciteReste: x?.montantPubliciteReste ?? 0,
           montantTotal: x?.montantTotal ?? 0,
         }))
       : []
@@ -254,6 +256,8 @@ onMounted(loadFactures)
                       <th>Heure diff</th>
                       <th class="text-end">Montant tickets</th>
                       <th class="text-end">Montant publicité</th>
+                      <th class="text-end">Payé pub</th>
+                      <th class="text-end">Reste pub</th>
                       <th class="text-end">CA total</th>
                     </tr>
                   </thead>
@@ -275,11 +279,13 @@ onMounted(loadFactures)
                         <td>{{ formatTime(r.dateHeure) }}</td>
                         <td class="text-end">{{ formatMoney(r.montantTickets) }} Ar</td>
                         <td class="text-end">{{ formatMoney(r.montantPublicite) }} Ar</td>
+                        <td class="text-end">{{ formatMoney(r.montantPublicitePaye) }} Ar</td>
+                        <td class="text-end">{{ formatMoney(r.montantPubliciteReste) }} Ar</td>
                         <td class="text-end fw-bold">{{ formatMoney(r.montantTotal) }} Ar</td>
                       </tr>
 
                       <tr v-if="isExpanded(r.seanceId)">
-                        <td colspan="7">
+                        <td colspan="9">
                           <div v-if="loadingDetailsBySeanceId[String(r.seanceId)]" class="text-muted">
                             Chargement des détails...
                           </div>
@@ -331,7 +337,7 @@ onMounted(loadFactures)
                       </tr>
                     </template>
                     <tr v-if="rows.length === 0">
-                      <td colspan="7" class="text-center text-muted">Aucune séance</td>
+                      <td colspan="9" class="text-center text-muted">Aucune séance</td>
                     </tr>
                   </tbody>
                 </table>

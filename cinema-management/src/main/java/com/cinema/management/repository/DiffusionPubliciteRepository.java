@@ -34,6 +34,17 @@ public interface DiffusionPubliciteRepository extends JpaRepository<DiffusionPub
       })
   List<DiffusionPublicite> findBySeanceId(Long seanceId);
 
+  @EntityGraph(
+      attributePaths = {
+        "contratPublicite",
+        "contratPublicite.tarifPublicite",
+        "contratPublicite.videoPublicitaire",
+        "contratPublicite.videoPublicitaire.societe",
+        "seance",
+        "seance.film"
+      })
+  List<DiffusionPublicite> findBySeanceIdIn(List<Long> seanceIds);
+
   @Query(
       "select dp.seance.id, coalesce(sum(dp.contratPublicite.tarifPublicite.prixParDiffusion * dp.nombrePub), 0) "
           + "from DiffusionPublicite dp "
