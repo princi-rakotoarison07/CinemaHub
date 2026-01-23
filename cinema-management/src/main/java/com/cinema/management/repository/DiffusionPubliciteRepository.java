@@ -9,4 +9,10 @@ public interface DiffusionPubliciteRepository extends JpaRepository<DiffusionPub
 
   @EntityGraph(attributePaths = {"contratPublicite", "seance"})
   List<DiffusionPublicite> findByContratPubliciteId(Long contratId);
+
+  @EntityGraph(attributePaths = {"contratPublicite", "seance"})
+  List<DiffusionPublicite> findAll();
+
+  @EntityGraph(attributePaths = {"contratPublicite", "seance"})
+  List<DiffusionPublicite> findBySeanceId(Long seanceId);
 }

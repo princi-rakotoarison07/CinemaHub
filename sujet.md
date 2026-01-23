@@ -28,3 +28,5 @@ contrainte: Le cout peut varier selon la seance (diffusion) ,
 dans une seance , on peut diffuser plusieurs publicités d'une société 
 
 Objectif: Combien s'eleve le montant du Chiffre d'affaires en decembre 2025 relatif au diffusions des videos publicitaires?
+
+

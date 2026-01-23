@@ -418,6 +418,16 @@ const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicite
       </li>
 
       <li class="nav-item">
+        <RouterLink
+          :class="['nav-link', route.path === '/stats/seances' ? '' : 'collapsed']"
+          to="/stats/seances"
+        >
+          <i class="bi bi-bar-chart"></i>
+          <span>Stats Revenus</span>
+        </RouterLink>
+      </li>
+
+      <li class="nav-item">
         <a
           :class="['nav-link', isTestsRoute ? '' : 'collapsed']"
           data-bs-target="#tests-nav"
@@ -451,6 +461,16 @@ const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicite
         </ul>
       </li>
 
+
+      <li class="nav-item">
+        <RouterLink
+          :class="['nav-link', isStatsRoute ? '' : 'collapsed']"
+          to="/stats/seances"
+        >
+          <i class="bi bi-bar-chart"></i>
+          <span>Stats Séances</span>
+        </RouterLink>
+      </li>
 
     </ul>
   </aside>

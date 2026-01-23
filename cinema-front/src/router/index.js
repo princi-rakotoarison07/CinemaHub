@@ -34,6 +34,7 @@ import ChiffreAffairePublicite from '../views/publicites/ChiffreAffairePublicite
 import SocieteGrid from '../views/publicites/config/SocieteGrid.vue'
 import VideoPublicitaireGrid from '../views/publicites/config/VideoPublicitaireGrid.vue'
 import TarifPubliciteGrid from '../views/publicites/config/TarifPubliciteGrid.vue'
+import SeanceRevenueStats from '../views/stats/SeanceRevenueStats.vue'
 
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
@@ -221,6 +222,11 @@ const router = createRouter({
           path: 'publicites/config/tarifs-publicite',
           name: 'publicites-config-tarifs-publicite',
           component: TarifPubliciteGrid,
+        },
+        {
+          path: 'stats/seances',
+          name: 'stats-seances',
+          component: SeanceRevenueStats,
         },
         // {
         //   path: 'advertising',

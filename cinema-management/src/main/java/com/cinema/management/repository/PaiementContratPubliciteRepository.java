@@ -41,4 +41,12 @@ public interface PaiementContratPubliciteRepository extends JpaRepository<Paieme
 
   @Query("select coalesce(sum(p.montant), 0) from PaiementContratPublicite p where p.contratPublicite.id = :contratId")
   BigDecimal sumByContratId(@Param("contratId") Long contratId);
+
+  @Query("select p.contratPublicite.id as contratId, sum(p.montant) as total from PaiementContratPublicite p group by p.contratPublicite.id")
+  List<ContratPaymentProjection> sumMontantGroupByContrat();
+
+  interface ContratPaymentProjection {
+    Long getContratId();
+    BigDecimal getTotal();
+  }
 }
