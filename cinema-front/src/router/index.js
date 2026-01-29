@@ -36,6 +36,13 @@ import SocieteGrid from '../views/publicites/config/SocieteGrid.vue'
 import VideoPublicitaireGrid from '../views/publicites/config/VideoPublicitaireGrid.vue'
 import TarifPubliciteGrid from '../views/publicites/config/TarifPubliciteGrid.vue'
 
+ import SeanceChiffreAffaireMensuel from '../views/seances/SeanceChiffreAffaireMensuel.vue'
+
+import ProduitList from '../views/ventes/ProduitList.vue'
+import ProduitForm from '../views/ventes/ProduitForm.vue'
+import VenteList from '../views/ventes/VenteList.vue'
+import VenteForm from '../views/ventes/VenteForm.vue'
+
 const router = createRouter({
   history: createWebHistory('/cinema-front/'),
   routes: [
@@ -104,6 +111,11 @@ const router = createRouter({
           path: 'seances/chiffres-affaire',
           name: 'seances-chiffres-affaire',
           component: SeanceChiffreAffaire,
+        },
+        {
+          path: 'seances/chiffres-affaire-mensuel',
+          name: 'seances-chiffres-affaire-mensuel',
+          component: SeanceChiffreAffaireMensuel,
         },
         {
           path: 'tarifs',
@@ -225,14 +237,35 @@ const router = createRouter({
         },
         {
           path: 'publicites/config/tarifs-publicite',
-          name: 'publicites-config-tarifs-publicite',
+          name: 'publicites-tarifs-publicite-grid',
           component: TarifPubliciteGrid,
         },
-        // {
-        //   path: 'advertising',
-        //   name: 'advertising-manager',
-        //   component: AdvertisingManager,
-        // },
+        {
+          path: 'ventes/produits',
+          name: 'ventes-produits-list',
+          component: ProduitList,
+        },
+        {
+          path: 'ventes/produits/new',
+          name: 'ventes-produits-new',
+          component: ProduitForm,
+        },
+        {
+          path: 'ventes/produits/:id/edit',
+          name: 'ventes-produits-edit',
+          component: ProduitForm,
+          props: true,
+        },
+        {
+          path: 'ventes',
+          name: 'ventes-list',
+          component: VenteList,
+        },
+        {
+          path: 'ventes/new',
+          name: 'ventes-new',
+          component: VenteForm,
+        },
       ],
     },
   ],

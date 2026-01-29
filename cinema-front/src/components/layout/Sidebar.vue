@@ -15,6 +15,7 @@ const isTicketsRoute = computed(() => route.path.startsWith('/tickets'))
 const isSeancesRoute = computed(() => route.path.startsWith('/seances'))
 const isClientsRoute = computed(() => route.path.startsWith('/clients'))
 const isReservationsRoute = computed(() => route.path.startsWith('/reservations'))
+const isVentesRoute = computed(() => route.path.startsWith('/ventes'))
 const isPublicitesRoute = computed(() => route.path.startsWith('/publicites'))
 const isPublicitesContratsRoute = computed(() => route.path.startsWith('/publicites/contrats'))
 const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicites/config'))
@@ -297,6 +298,16 @@ const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicite
       </li>
 
       <li class="nav-item">
+        <RouterLink
+          :class="['nav-link', route.path === '/seances/chiffres-affaire-mensuel' ? '' : 'collapsed']"
+          to="/seances/chiffres-affaire-mensuel"
+        >
+          <i class="bi bi-graph-up"></i>
+          <span>CA mensuelle</span>
+        </RouterLink>
+      </li>
+
+      <li class="nav-item">
         <a
           :class="['nav-link', isReservationsRoute ? '' : 'collapsed']"
           data-bs-target="#reservations-nav"
@@ -322,6 +333,42 @@ const isPublicitesConfigRoute = computed(() => route.path.startsWith('/publicite
               to="/reservations/new"
             >
               <i class="bi bi-circle"></i><span>Nouveau</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a
+          :class="['nav-link', isVentesRoute ? '' : 'collapsed']"
+          data-bs-target="#ventes-nav"
+          data-bs-toggle="collapse"
+          href="#"
+        >
+          <i class="bi bi-cart"></i><span>Vente</span
+          ><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul
+          id="ventes-nav"
+          :class="['nav-content', 'collapse', isVentesRoute ? 'show' : '']"
+          data-bs-parent="#sidebar-nav"
+        >
+          <li>
+            <RouterLink
+              :class="[route.path === '/ventes/produits' ? 'active' : '']"
+              to="/ventes/produits"
+            >
+              <i class="bi bi-circle"></i><span>Produits</span>
+            </RouterLink>
+          </li>
+          <li>
+            <RouterLink :class="[route.path === '/ventes' ? 'active' : '']" to="/ventes">
+              <i class="bi bi-circle"></i><span>Liste ventes</span>
+            </RouterLink>
+          </li>
+          <li>
+            <RouterLink :class="[route.path === '/ventes/new' ? 'active' : '']" to="/ventes/new">
+              <i class="bi bi-circle"></i><span>Nouvelle vente</span>
             </RouterLink>
           </li>
         </ul>

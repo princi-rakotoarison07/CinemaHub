@@ -10,6 +10,7 @@ import com.cinema.management.repository.DiffusionPubliciteRepository;
 import com.cinema.management.repository.PaiementContratPubliciteRepository;
 import com.cinema.management.repository.SeanceRepository;
 import com.cinema.management.repository.TarifRepository;
+import java.util.Collection;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -56,16 +57,19 @@ public class SeanceChiffreAffaireService {
 
     Map<Long, BigDecimal> ticketsBySeance = computeTicketRevenueBySeance(seanceIds);
     Map<Long, BigDecimal> pubBySeance = computePubliciteRevenueBySeance(seanceIds);
+    PubliciteBreakdownBySeance pubsPaidAndReste = computePublicitePaidAndResteBySeance(seanceIds);
 
     List<SeanceChiffreAffaireDto> out = new ArrayList<>();
     for (Seance s : seances) {
       Long id = s.getId();
       BigDecimal tickets = ticketsBySeance.getOrDefault(id, BigDecimal.ZERO);
       BigDecimal pub = pubBySeance.getOrDefault(id, BigDecimal.ZERO);
+      BigDecimal pubPaye = pubsPaidAndReste.payeBySeance().getOrDefault(id, BigDecimal.ZERO);
+      BigDecimal pubReste = pubsPaidAndReste.resteBySeance().getOrDefault(id, BigDecimal.ZERO);
       BigDecimal total = tickets.add(pub);
 
       String filmTitre = (s.getFilm() != null ? s.getFilm().getTitre() : null);
-      out.add(new SeanceChiffreAffaireDto(id, filmTitre, s.getDateHeure(), tickets, pub, total));
+      out.add(new SeanceChiffreAffaireDto(id, filmTitre, s.getDateHeure(), tickets, pub, pubPaye, pubReste, total));
     }
 
     return out;
@@ -163,6 +167,75 @@ public class SeanceChiffreAffaireService {
     return map;
   }
 
+  private PubliciteBreakdownBySeance computePublicitePaidAndResteBySeance(List<Long> seanceIds) {
+    Map<Long, BigDecimal> payeBySeance = new HashMap<>();
+    Map<Long, BigDecimal> resteBySeance = new HashMap<>();
+
+    if (seanceIds == null || seanceIds.isEmpty()) {
+      return new PubliciteBreakdownBySeance(payeBySeance, resteBySeance);
+    }
+
+    List<DiffusionPublicite> diffusions = diffusionPubliciteRepository.findBySeanceIdIn(seanceIds);
+    if (diffusions == null || diffusions.isEmpty()) {
+      return new PubliciteBreakdownBySeance(payeBySeance, resteBySeance);
+    }
+
+    Collection<Long> contratIds =
+        diffusions.stream()
+            .map(dp -> dp != null && dp.getContratPublicite() != null ? dp.getContratPublicite().getId() : null)
+            .filter(x -> x != null)
+            .collect(Collectors.toSet());
+
+    Map<Long, BigDecimal> payeParContrat = new HashMap<>();
+    if (!contratIds.isEmpty()) {
+      for (Object[] row : paiementContratPubliciteRepository.sumByContratIds(contratIds)) {
+        if (row == null || row.length < 2) continue;
+        Long cid = (Long) row[0];
+        BigDecimal sum = (BigDecimal) row[1];
+        payeParContrat.put(cid, sum != null ? sum : BigDecimal.ZERO);
+      }
+    }
+
+    for (DiffusionPublicite dp : diffusions) {
+      if (dp == null || dp.getSeance() == null || dp.getSeance().getId() == null) continue;
+      if (dp.getContratPublicite() == null || dp.getContratPublicite().getId() == null) continue;
+
+      Long seanceId = dp.getSeance().getId();
+      Long contratId = dp.getContratPublicite().getId();
+
+      Integer nombrePub = dp.getNombrePub() != null ? dp.getNombrePub() : 0;
+      BigDecimal prixParDiffusion =
+          dp.getContratPublicite().getTarifPublicite() != null
+                  && dp.getContratPublicite().getTarifPublicite().getPrixParDiffusion() != null
+              ? dp.getContratPublicite().getTarifPublicite().getPrixParDiffusion()
+              : BigDecimal.ZERO;
+
+      BigDecimal montantDiffusion = prixParDiffusion.multiply(BigDecimal.valueOf(nombrePub));
+
+      BigDecimal montantContrat =
+          dp.getContratPublicite().getMontantTotal() != null
+              ? dp.getContratPublicite().getMontantTotal()
+              : BigDecimal.ZERO;
+      BigDecimal payeContrat = payeParContrat.getOrDefault(contratId, BigDecimal.ZERO);
+
+      BigDecimal ratio = BigDecimal.ZERO;
+      if (montantContrat.compareTo(BigDecimal.ZERO) > 0) {
+        ratio = payeContrat.divide(montantContrat, 6, RoundingMode.HALF_UP);
+        if (ratio.compareTo(BigDecimal.ZERO) < 0) ratio = BigDecimal.ZERO;
+        if (ratio.compareTo(BigDecimal.ONE) > 0) ratio = BigDecimal.ONE;
+      }
+
+      BigDecimal payeDiffusion = montantDiffusion.multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+      BigDecimal resteDiffusion = montantDiffusion.subtract(payeDiffusion);
+      if (resteDiffusion.compareTo(BigDecimal.ZERO) < 0) resteDiffusion = BigDecimal.ZERO;
+
+      payeBySeance.put(seanceId, payeBySeance.getOrDefault(seanceId, BigDecimal.ZERO).add(payeDiffusion));
+      resteBySeance.put(seanceId, resteBySeance.getOrDefault(seanceId, BigDecimal.ZERO).add(resteDiffusion));
+    }
+
+    return new PubliciteBreakdownBySeance(payeBySeance, resteBySeance);
+  }
+
   private Map<Long, BigDecimal> computeTicketRevenueBySeance(List<Long> seanceIds) {
     Map<Long, BigDecimal> map = new HashMap<>();
     List<DetailsReservation> details =
@@ -217,7 +290,13 @@ public class SeanceChiffreAffaireService {
       Instant dateHeure,
       BigDecimal montantTickets,
       BigDecimal montantPublicite,
+      BigDecimal montantPublicitePaye,
+      BigDecimal montantPubliciteReste,
       BigDecimal montantTotal) {}
+
+  private record PubliciteBreakdownBySeance(
+      Map<Long, BigDecimal> payeBySeance,
+      Map<Long, BigDecimal> resteBySeance) {}
 
   public record DiffusionPubliciteDetailDto(
       Long contratId,
